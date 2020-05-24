@@ -62,6 +62,13 @@
     align-items: center;
   }
 
+  .covid__title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
   .covid__dropdowns {
     display: flex;
     flex-direction: column;

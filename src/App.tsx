@@ -111,7 +111,7 @@ class App extends Component<any, any> {
     if (!data || !data.length) return <div>No data</div>;
 
     const windowWidth = window.innerWidth;
-    const width = windowWidth >= 500 ? 500 : (windowWidth * 0.9); 
+    const width = windowWidth >= 500 ? 500 : (windowWidth * 0.8); 
 
     return (
       <AreaChart width={width} height={250} data={data}
