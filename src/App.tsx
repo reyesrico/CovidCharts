@@ -130,8 +130,8 @@ class App extends Component<any, any> {
       <YAxis />
       <CartesianGrid strokeDasharray="3 3" />
       <Tooltip />
-      <Area type="monotone" dataKey="Confirmed" stroke="#8884d8" fillOpacity={1} fill="url(#colorConfirmed)" />
-      <Area type="monotone" dataKey="Deaths" stroke="#82ca9d" fillOpacity={1} fill="url(#colorDeaths)" />
+      <Area type="monotone" dataKey="Confirmed" stroke="#82ca9d" fillOpacity={1} fill="url(#colorConfirmed)" />
+      <Area type="monotone" dataKey="Deaths" stroke="#8884d8" fillOpacity={1} fill="url(#colorDeaths)" />
     </AreaChart>
     );
   }
