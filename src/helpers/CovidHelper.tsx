@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { CountryDataRow } from "./types";
+import { CountryDataRow } from "../types/types";
 
 export const hasProvince = (country: CountryDataRow[]): boolean => {
   return country && country.some((row: CountryDataRow) => row.Province !== "");

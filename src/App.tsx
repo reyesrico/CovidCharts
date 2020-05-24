@@ -3,11 +3,12 @@ import Select from 'react-select';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { isEqual, sortBy } from 'lodash';
 
-import Footer from './Footer';
-import Loading from './Loading';
-import { CountryDataRow } from './types';
-import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './CovidHelper';
-import { getCountry, getCountries } from './Service';
+import Footer from './components/Footer';
+import Instructions from './components/Instructions';
+import Loading from './components/Loading';
+import { CountryDataRow } from './types/types';
+import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
+import { getCountry, getCountries } from './helpers/Service';
 
 import './App.scss';
 
@@ -148,6 +149,7 @@ class App extends Component<any, any> {
     return (
       <div className="covid">
         <h2 className="covid__title">COVID {countrySelected.label} Charts</h2>
+        <Instructions />
         <div className="covid__dropdowns">
           <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
           {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}

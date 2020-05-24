@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactLoading from 'react-loading';
-import { LoadingProps } from './types';
+import { LoadingProps } from '../types/types';
 
 import './Loading.scss';
 
