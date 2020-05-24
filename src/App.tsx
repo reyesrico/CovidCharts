@@ -3,9 +3,10 @@ import Select from 'react-select';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { isEqual, sortBy } from 'lodash';
 
+import Footer from './Footer';
 import Loading from './Loading';
 import { CountryDataRow } from './types';
-import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces } from './CovidHelper';
+import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './CovidHelper';
 import { getCountry, getCountries } from './Service';
 
 import './App.scss';
@@ -104,12 +105,16 @@ class App extends Component<any, any> {
                hasProvince(country)? usMap[provinceSelected.label]:
                country;
 
+    data = updateDates(data);
     data = managed ? manageCountryData(data) : data;
 
     if (!data || !data.length) return <div>No data</div>;
 
+    const windowWidth = window.innerWidth;
+    const width = windowWidth >= 500 ? 500 : (windowWidth * 0.9); 
+
     return (
-      <AreaChart width={500} height={250} data={data}
+      <AreaChart width={width} height={250} data={data}
       margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
       <defs>
         <linearGradient id="colorDeaths" x1="0" y1="0" x2="0" y2="1">
@@ -141,24 +146,28 @@ class App extends Component<any, any> {
     let countryHasCity = hasCity(country);
 
     return (
-      <div>
-        <h2>COVID {countrySelected.label} Charts</h2>
-        <hr />
+      <div className="covid">
+        <h2 className="covid__title">COVID {countrySelected.label} Charts</h2>
         <div className="covid__dropdowns">
           <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
           {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}
           {countryHasCity && <Select onChange={(citySelected: any ) => this.setState({ citySelected })} options={cities} value={citySelected} />}
         </div>
-        <hr/>
-        {this.renderChart(country)}
         <hr />
-        {this.renderChart(country, true)}
-        <hr />
-        <div className="covid__texts">
-          <div className="covid__text">{countrySelected.label}</div>
-          {countryHasProvince && <div className="covid__text">{provinceSelected?.label}</div>}
-          {countryHasCity && <div className="covid__text">{citySelected?.label}</div>}
+        <div className="covid__charts">
+          <h3 className="covid__chart-text">Total Confirmed and Deaths</h3>
+          {this.renderChart(country)}
+          <hr />
+          <h3 className="covid__chart-text">Incremental Confirmed (To Date - One Day Before) and Deaths</h3>
+          {this.renderChart(country, true)}
+          <hr />
+          <div className="covid__texts">
+            <div className="covid__text">{countrySelected.label}</div>
+            {countryHasProvince && <div className="covid__text">{provinceSelected?.label}</div>}
+            {countryHasCity && <div className="covid__text">{citySelected?.label}</div>}
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }

@@ -1,6 +1,37 @@
+.covid__title {
+  background-color: lightsteelblue;
+  margin: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-left: 8px;
+  border-bottom: solid 2px gray;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.covid__chart-text {
+  background-color: lightblue;
+  margin: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-left: 8px;
+  border-bottom: solid 2px gray;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
 .covid__dropdowns {
   display: flex;
   flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.covid__charts {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .covid__texts {
@@ -21,6 +52,25 @@
 
 .css-2b097c-container {
   width: 90%;
+}
+
+@media screen and (max-width: 500px) {
+  .covid {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .covid__dropdowns {
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+  }
+
+  .css-2b097c-container {
+    width: 100%;
+  }
 }
 
 .result {

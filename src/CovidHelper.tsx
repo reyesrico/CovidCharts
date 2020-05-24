@@ -53,18 +53,16 @@ export const manageCountryData = (country: CountryDataRow[]) => {
   let row: CountryDataRow = country[0];
 
   let confirmedInc: number[] = [row.Confirmed];
-  let dates: string[] = [moment(row.Date).format("MMM Do")];
 
   for(let i = 1; i < country.length; i++) {
     row = country[i];
     let lastRow: CountryDataRow = country[i-1];
     let increment = row.Confirmed - lastRow.Confirmed;
     confirmedInc[i] = increment;
-    dates.push(moment(row.Date).format("MMM Do"));
   }
 
   let countryData = country.map((row: CountryDataRow, index: number) => {
-    return { ...row, Confirmed: confirmedInc[index], Date: dates[index] }
+    return { ...row, Confirmed: confirmedInc[index] };
   });
 
   return countryData;
@@ -73,5 +71,11 @@ export const manageCountryData = (country: CountryDataRow[]) => {
 export const getProvinces = (usMap: any) => {
   return Object.keys(usMap).sort().map((p: string) => {
     return { name: p, label: p, value: p };
+  });
+}
+
+export const updateDates = (data: CountryDataRow[]) => {
+  return data.map((row: CountryDataRow) => {
+    return { ...row, Date: moment(row.Date).format("MMM Do")};
   });
 }
