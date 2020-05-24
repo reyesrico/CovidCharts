@@ -14,7 +14,7 @@ import './App.scss';
 
 class App extends Component<any, any> {
   state = {
-    defaultCountrySlug: 'mexico',
+    defaultCountrySlug: localStorage.getItem('country') || 'mexico',
     menu: { 'fn': null },
     all: null,
     country: [],
@@ -149,7 +149,7 @@ class App extends Component<any, any> {
     return (
       <div className="covid">
         <h2 className="covid__title">COVID {countrySelected.label} Charts</h2>
-        <Instructions />
+        <Instructions countrySelected={countrySelected} />
         <div className="covid__dropdowns">
           <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
           {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}

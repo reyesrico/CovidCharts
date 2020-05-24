@@ -1,5 +1,6 @@
 .instructions {
   padding-left: 8px;
+  padding-right: 8px;
   margin-bottom: 8px;
   border-bottom: solid 1px gray;
   width: 100%;
@@ -14,4 +15,18 @@
 .instructions__list {
   padding: 0;
   list-style-position: inside;
+}
+
+.instructions__examples {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.instructions__button {
+  background-color: lightgray;
+  font-weight: bold;
+  font-size: 14px;
+  margin-right: 12px;
 }
