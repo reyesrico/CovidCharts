@@ -1,8 +1,8 @@
 {
-  "name": "my-app",
+  "name": "covid-charts",
   "version": "0.1.0",
   "private": true,
-  "homepage": "http://reyesrico.github.io/CovidChart",
+  "homepage": "http://reyesrico.github.io/CovidCharts",
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
