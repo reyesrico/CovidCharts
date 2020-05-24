@@ -1,0 +1,11 @@
+.stuffie-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.stuffie-loading__message {
+  color: blue;
+  margin-top: 8px;  
+}
