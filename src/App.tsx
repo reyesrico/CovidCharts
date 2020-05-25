@@ -6,11 +6,13 @@ import { isEqual, sortBy } from 'lodash';
 import Footer from './components/Footer';
 import Instructions from './components/Instructions';
 import Loading from './components/Loading';
+import MakeChart from './components/MakeChart';
 import { CountryDataRow } from './types/types';
 import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
 import { getCountry, getCountries } from './helpers/Service';
 
 import './App.scss';
+import CompareChart from './components/CompareChart';
 
 class App extends Component<any, any> {
   state = {
@@ -21,6 +23,7 @@ class App extends Component<any, any> {
     countryData: [],
     countries: [],
     countrySelected: { name: null, Country: '', value: '', label: null },
+    countryCompare: { name: null, Country: '', value: '', label: null },
     isLoading: false,
     provinces: [],
     provinceData: [],
@@ -43,7 +46,7 @@ class App extends Component<any, any> {
         return { ...row, value: row.Slug, label: row.Country, name: row.Slug };
       });
 
-      this.setState({ countries, countrySelected: countries[id] });
+      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[0] });
     });
   }
 
@@ -98,16 +101,21 @@ class App extends Component<any, any> {
     .finally(() => this.setState({ isLoading: false }));
   }
 
+  getData = (country: CountryDataRow[], managed: boolean = false) => {
+    const { usMap, citySelected, provinceSelected } = this.state;
 
-  renderChart(country: CountryDataRow[], managed: boolean = false) {
-    const { provinceSelected, usMap, citySelected } = this.state;
     let data = hasCity(country)? getCityData(usMap, provinceSelected, citySelected):
                 // @ts-ignore
                hasProvince(country)? usMap[provinceSelected.label]:
                country;
 
     data = updateDates(data);
-    data = managed ? manageCountryData(data) : data;
+
+    return managed ? manageCountryData(data) : data;
+  }
+
+  renderChart(country: CountryDataRow[], managed: boolean = false, compare: boolean = true) {
+    let data = this.getData(country, managed);
 
     if (!data || !data.length) return <div>No data</div>;
 
@@ -116,7 +124,7 @@ class App extends Component<any, any> {
 
     return (
       <AreaChart width={width} height={250} data={data}
-      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
       <defs>
         <linearGradient id="colorDeaths" x1="0" y1="0" x2="0" y2="1">
           <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
@@ -138,7 +146,7 @@ class App extends Component<any, any> {
   }
 
   render() {
-    const { country, countries, countrySelected, isLoading, provinces, provinceSelected, cities, citySelected } = this.state;
+    const { country, countries, countrySelected, isLoading, provinces, provinceSelected, cities, citySelected, usMap, countryCompare } = this.state;
 
     let countryText = countrySelected.label ?? 'Country';
     if (!countries.length || isLoading) return (<Loading size="xl" message={`Loading ${countryText} Data`} />);
@@ -162,6 +170,14 @@ class App extends Component<any, any> {
           <hr />
           <h3 className="covid__chart-text">Incremental Confirmed (To Date - One Day Before) and Deaths</h3>
           {this.renderChart(country, true)}
+          <h3 className="covid__chart-text">Compare Confirmed with other country</h3>
+          <div className="covid__chart-select">
+            <Select onChange={(countryCompare: any) => this.setState({ countryCompare })} options={countries} value={countryCompare} />
+          </div>
+          {country.length && <CompareChart data={country} width={500} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
+          <hr />
+          <h3 className="covid__chart-text">Make Your Own Chart</h3>
+          <MakeChart countries={countries} data={country} map={usMap} />
           <hr />
           <div className="covid__texts">
             <div className="covid__text">{countrySelected.label}</div>

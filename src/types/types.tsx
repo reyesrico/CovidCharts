@@ -17,3 +17,16 @@ export interface LoadingProps {
   size: LoadingSize,
   message?: string
 }
+
+export interface MakeChartProps {
+  data: CountryDataRow[]
+  map: any,
+  countries: any[]
+}
+
+export interface CompareChartProps {
+  width: number,
+  data: CountryDataRow[]
+  countryCompare: any,
+  hasProvinces: boolean
+}

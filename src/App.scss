@@ -50,6 +50,16 @@
   }
 }
 
+.covid__chart-select {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  background-color: lightgrey;
+  width: 100%;
+  padding: 8px;
+}
+
 .css-2b097c-container {
   width: 90%;
 }

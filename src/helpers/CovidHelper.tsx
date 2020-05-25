@@ -53,16 +53,17 @@ export const manageCountryData = (country: CountryDataRow[]) => {
   let row: CountryDataRow = country[0];
 
   let confirmedInc: number[] = [row.Confirmed];
+  let deathsInc: number[] = [row.Deaths];
 
   for(let i = 1; i < country.length; i++) {
     row = country[i];
     let lastRow: CountryDataRow = country[i-1];
-    let increment = row.Confirmed - lastRow.Confirmed;
-    confirmedInc[i] = increment;
+    confirmedInc[i] = row.Confirmed - lastRow.Confirmed;
+    deathsInc[i] = row.Deaths - lastRow.Deaths;
   }
 
   let countryData = country.map((row: CountryDataRow, index: number) => {
-    return { ...row, Confirmed: confirmedInc[index] };
+    return { ...row, Confirmed: confirmedInc[index], Deaths: deathsInc[index] };
   });
 
   return countryData;

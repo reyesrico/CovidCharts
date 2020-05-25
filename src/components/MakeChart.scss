@@ -1,0 +1,19 @@
+.make-chart {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.make-chart__options {
+  margin-right: 12px;
+  padding: 12px;
+  background-color: lightgray;
+}
+
+.make-chart__values {
+  font-weight: bold;
+  font-size: 14px;
+  border-bottom: solid 2px gray;
+  margin-bottom: 4px;
+}
