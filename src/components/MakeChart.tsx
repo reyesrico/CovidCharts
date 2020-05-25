@@ -75,8 +75,13 @@ class MakeChart extends Component<MakeChartProps, any> {
   }
 
   renderChart = () => {
+    const { width } = this.props;
     const { series } = this.state;
-    const plotOptions = { ...options, series };
+    const plotOptions = {
+      ...options,
+      chart: { ...options.chart, width },
+      series
+    };
 
     if (!isEmpty(series)) {
       return (<HighchartsReact highcharts={Highcharts} options={plotOptions} />);

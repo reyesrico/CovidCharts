@@ -21,7 +21,8 @@ export interface LoadingProps {
 export interface MakeChartProps {
   data: CountryDataRow[]
   map: any,
-  countries: any[]
+  countries: any[],
+  width: number
 }
 
 export interface CompareChartProps {

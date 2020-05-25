@@ -3,7 +3,7 @@ const legend = {
 };
 
 const options = {
-  chart: { width: 500, height: 250, zoomType: 'x' },
+  chart: { height: 250, zoomType: 'x' },
   title: { text: '' },
   legend,
   xAxis: { type: 'datetime' },

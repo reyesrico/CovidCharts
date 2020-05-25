@@ -32,6 +32,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  width: 100%;
 }
 
 .covid__texts {
@@ -58,6 +59,7 @@
   background-color: lightgrey;
   width: 100%;
   padding: 8px;
+  margin-bottom: 12px;
 }
 
 .css-2b097c-container {
@@ -82,6 +84,10 @@
   .covid__dropdowns {
     display: flex;
     flex-direction: column;
+    width: 90%;
+  }
+
+  .covid__chart-select {
     width: 90%;
   }
 

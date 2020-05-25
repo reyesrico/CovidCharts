@@ -30,11 +30,14 @@ class App extends Component<any, any> {
     provinceSelected: { name: null, value: '', label: null },
     cities: [],
     citySelected: { name: null, value: '', label: null },
-    usMap: {}
+    usMap: {},
+    width: 500
   }
 
   componentDidMount() {
     const { defaultCountrySlug } = this.state;
+    const windowWidth = window.innerWidth;
+    const width = windowWidth >= 500 ? 500 : (windowWidth * 0.8); 
 
     getCountries().then((res: any) => {
       let sorted = sortBy(res.data, ['Slug']);
@@ -46,7 +49,7 @@ class App extends Component<any, any> {
         return { ...row, value: row.Slug, label: row.Country, name: row.Slug };
       });
 
-      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[0] });
+      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[0], width });
     });
   }
 
@@ -115,12 +118,11 @@ class App extends Component<any, any> {
   }
 
   renderChart(country: CountryDataRow[], managed: boolean = false, compare: boolean = true) {
+    const { width } = this.state;
+
     let data = this.getData(country, managed);
 
     if (!data || !data.length) return <div>No data</div>;
-
-    const windowWidth = window.innerWidth;
-    const width = windowWidth >= 500 ? 500 : (windowWidth * 0.8); 
 
     return (
       <AreaChart width={width} height={250} data={data}
@@ -146,7 +148,8 @@ class App extends Component<any, any> {
   }
 
   render() {
-    const { country, countries, countrySelected, isLoading, provinces, provinceSelected, cities, citySelected, usMap, countryCompare } = this.state;
+    const { country, countries, countrySelected, isLoading, provinces,
+      provinceSelected, cities, citySelected, usMap, countryCompare, width } = this.state;
 
     let countryText = countrySelected.label ?? 'Country';
     if (!countries.length || isLoading) return (<Loading size="xl" message={`Loading ${countryText} Data`} />);
@@ -174,10 +177,10 @@ class App extends Component<any, any> {
           <div className="covid__chart-select">
             <Select onChange={(countryCompare: any) => this.setState({ countryCompare })} options={countries} value={countryCompare} />
           </div>
-          {country.length && <CompareChart data={country} width={500} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
+          {country.length && <CompareChart data={country} width={width} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
           <hr />
           <h3 className="covid__chart-text">Make Your Own Chart</h3>
-          <MakeChart countries={countries} data={country} map={usMap} />
+          <MakeChart countries={countries} data={country} map={usMap} width={width} />
           <hr />
           <div className="covid__texts">
             <div className="covid__text">{countrySelected.label}</div>
