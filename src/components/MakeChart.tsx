@@ -76,11 +76,11 @@ class MakeChart extends Component<MakeChartProps, any> {
     return (
       <div className="make-chart__options">
         <div className="make-chart__values">Values (Y Axis)</div>
-        {Object.keys(yValues).map(yValue => {
+        {Object.keys(yValues).map((yValue: string, index: number) => {
           // @ts-ignore
           const checked = yValues[yValue];
           return (
-            <div>
+            <div key={index}>
               <input checked={checked} type="checkbox" name="yaxis" value={yValue} id={yValue}
                 onChange={event => event && this.changeInput(yValue)}/>
               {yValue}
