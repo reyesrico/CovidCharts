@@ -34,11 +34,22 @@ class MakeChart extends Component<MakeChartProps, any> {
     if (!isEqual(prevState.yValues, yValues)) {
       
       if(this.yValuesFalse()) {
-        this.setState({ yValues: { ...yValues, Confirmed: true } });
+        this.clearYValues();
       } else {
         this.getData();
       }
     }
+  }
+
+  clearYValues = () => {
+    let yValues: any = {};
+
+    Object.keys(this.state.yValues).forEach(yValue => {
+      const value = yValue === 'Confirmed' ? true : false;
+      yValues = { ...yValues, [yValue]: value };
+    });
+
+    this.setState({ yValues });
   }
 
   yValuesFalse = () => {
