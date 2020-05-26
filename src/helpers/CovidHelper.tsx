@@ -63,7 +63,7 @@ export const manageCountryData = (country: CountryDataRow[]) => {
   }
 
   let countryData = country.map((row: CountryDataRow, index: number) => {
-    return { ...row, Confirmed: confirmedInc[index], Deaths: deathsInc[index] };
+    return { ...row, Confirmed: confirmedInc[index] };
   });
 
   return countryData;

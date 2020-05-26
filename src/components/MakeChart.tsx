@@ -15,10 +15,14 @@ import './MakeChart.scss';
 class MakeChart extends Component<MakeChartProps, any> {
   state = {
     series: {},
-    yName: '',
-    yConfirmed: true,
-    yDeaths: false,
-    yRecovered: false
+    yValues: {
+      Confirmed: true,
+      Deaths: false,
+      Recovered: false,
+      ConfirmedInc: false,
+      DeathsInc: false,
+      RecoveredInc: false  
+    }
   }
 
   componentDidMount() {
@@ -26,49 +30,90 @@ class MakeChart extends Component<MakeChartProps, any> {
   }
 
   componentDidUpdate(prevProps: MakeChartProps, prevState: any) {
-    const { yConfirmed, yDeaths, yRecovered } = this.state;
-    if (!isEqual(prevState.yConfirmed, yConfirmed) ||
-        !isEqual(prevState.yDeaths, yDeaths) || 
-        !isEqual(prevState.yRecovered, yRecovered)) {
+    const { yValues } = this.state;
+    if (!isEqual(prevState.yValues, yValues)) {
       
-      if(!yConfirmed && !yDeaths && !yRecovered) {
-        this.setState({ yConfirmed: true });
+      if(this.yValuesFalse()) {
+        this.setState({ yValues: { ...yValues, Confirmed: true } });
       } else {
         this.getData();
       }
     }
   }
 
+  yValuesFalse = () => {
+    const res = Object.values(this.state.yValues).reduce((acc: boolean, val: boolean) => {
+      return acc || val;
+    });
+
+    return !res;
+  }
+
+  changeInput(yValue: any) {
+    const { yValues } = this.state;
+    // @ts-ignore
+    const value: any = yValues[yValue];
+    this.setState({ yValues: { ...yValues, [yValue]: !value }});
+  }
+
   renderOptions = () => {
+    const { yValues } = this.state;
+   
     return (
       <div className="make-chart__options">
         <div className="make-chart__values">Values (Y Axis)</div>
-        <div><input checked={this.state.yConfirmed} type="checkbox" name="yaxis" value="Confirmed" id="Confirmed" onChange={event => event && this.setState({ yConfirmed: !this.state.yConfirmed })}/>Confirmed</div>
-        <div><input type="checkbox" name="yaxis" value="Deaths" id="Deaths" onChange={event => event && this.setState({ yDeaths: !this.state.yDeaths })}/>Deaths</div>
-        <div><input type="checkbox" name="yaxis" value="Recovered" id="Recovered" onChange={event => event && this.setState({ yRecovered: !this.state.yRecovered })}/>Recovered</div>
+        {Object.keys(yValues).map(yValue => {
+          // @ts-ignore
+          const checked = yValues[yValue];
+          return (
+            <div>
+              <input checked={checked} type="checkbox" name="yaxis" value={yValue} id={yValue}
+                onChange={event => event && this.changeInput(yValue)}/>
+              {yValue}
+            </div>);
+        })}
       </div>
     )
   }
 
   getData = () => {
     const { data } = this.props;
-    const { yConfirmed, yDeaths, yRecovered } = this.state;
+    const { yValues } = this.state;
+    console.log(`merol: ${this.yValuesFalse()}`)
 
-    if (yConfirmed || yDeaths || yRecovered) {
+    if (!this.yValuesFalse()) {
       let confirmed: any = [];
       let deaths: any = [];
       let recovered: any = [];
+      let confirmedInc: any = [];
+      let deathsInc: any = [];
+      let recoveredInc: any = [];
 
-      data.forEach((row: CountryDataRow) => {
-        yConfirmed && confirmed.push([moment(row.Date).valueOf(), row.Confirmed]);
-        yDeaths && deaths.push([moment(row.Date).valueOf(), row.Deaths]);
-        yRecovered && recovered.push([moment(row.Date).valueOf(), row.Recovered]);
+      data.forEach((row: CountryDataRow, index: number) => {
+        yValues.Confirmed && confirmed.push([moment(row.Date).valueOf(), row.Confirmed]);
+        yValues.Deaths && deaths.push([moment(row.Date).valueOf(), row.Deaths]);
+        yValues.Recovered && recovered.push([moment(row.Date).valueOf(), row.Recovered]);
+
+        // Incrementals
+        if (index === 0) {
+          yValues.ConfirmedInc && confirmedInc.push([moment(row.Date).valueOf(), 0]);
+          yValues.DeathsInc && deathsInc.push([moment(row.Date).valueOf(), 0]);
+          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), 0]);
+        } else {
+          let lastRow = data[index-1];
+          yValues.ConfirmedInc && confirmedInc.push([moment(row.Date).valueOf(), row.Confirmed - lastRow.Confirmed]);
+          yValues.DeathsInc && deathsInc.push([moment(row.Date).valueOf(), row.Deaths - lastRow.Deaths]);
+          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), row.Recovered, row.Recovered - lastRow.Recovered]);  
+        }
       });
 
       let series = [];
-      yConfirmed && series.push({ type: 'area', name: 'Confirmed', data: confirmed });
-      yDeaths && series.push({ type: 'area', name: 'Deaths', data: deaths });
-      yRecovered && series.push({ type: 'area', name: 'Recovered', data: recovered });
+      yValues.Confirmed && series.push({ type: 'area', name: 'Confirmed', data: confirmed });
+      yValues.Deaths && series.push({ type: 'area', name: 'Deaths', data: deaths });
+      yValues.Recovered && series.push({ type: 'area', name: 'Recovered', data: recovered });
+      yValues.ConfirmedInc && series.push({ type: 'area', name: 'ConfirmedInc', data: confirmedInc });
+      yValues.DeathsInc && series.push({ type: 'area', name: 'DeathsInc', data: deathsInc });
+      yValues.RecoveredInc && series.push({ type: 'area', name: 'RecoveredInc', data: recoveredInc });
 
       this.setState({ series });  
     } 

@@ -177,7 +177,7 @@ class App extends Component<any, any> {
           <div className="covid__chart-select">
             <Select onChange={(countryCompare: any) => this.setState({ countryCompare })} options={countries} value={countryCompare} />
           </div>
-          {country.length && <CompareChart data={country} width={width} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
+          {country.length && !countryHasProvince && <CompareChart data={country} width={width} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
           <hr />
           <h3 className="covid__chart-text">Make Your Own Chart</h3>
           <MakeChart countries={countries} data={country} map={usMap} width={width} />
