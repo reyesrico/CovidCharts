@@ -60,11 +60,14 @@ class MakeChart extends Component<MakeChartProps, any> {
     return !res;
   }
 
-  changeInput(yValue: any) {
-    const { yValues } = this.state;
+  changeInput(yValue: string) {
     // @ts-ignore
-    const value: any = yValues[yValue];
-    this.setState({ yValues: { ...yValues, [yValue]: !value }});
+    const value: any = this.state.yValues[yValue];
+
+    const yValues: { [key: string]: boolean } = { ...this.state.yValues };
+    yValues[yValue] = !value;
+
+    this.setState({ yValues });
   }
 
   renderOptions = () => {
