@@ -19,9 +19,11 @@ class MakeChart extends Component<MakeChartProps, any> {
       Confirmed: true,
       Deaths: false,
       Recovered: false,
+      Active: false,
       ConfirmedInc: false,
       DeathsInc: false,
-      RecoveredInc: false  
+      RecoveredInc: false,
+      ActiveInc: false
     }
   }
 
@@ -98,25 +100,30 @@ class MakeChart extends Component<MakeChartProps, any> {
       let confirmed: any = [];
       let deaths: any = [];
       let recovered: any = [];
+      let active: any = [];
       let confirmedInc: any = [];
       let deathsInc: any = [];
       let recoveredInc: any = [];
+      let activeInc: any = [];
 
       data.forEach((row: CountryDataRow, index: number) => {
         yValues.Confirmed && confirmed.push([moment(row.Date).valueOf(), row.Confirmed]);
         yValues.Deaths && deaths.push([moment(row.Date).valueOf(), row.Deaths]);
         yValues.Recovered && recovered.push([moment(row.Date).valueOf(), row.Recovered]);
+        yValues.Active && active.push([moment(row.Date).valueOf(), row.Active]);
 
         // Incrementals
         if (index === 0) {
           yValues.ConfirmedInc && confirmedInc.push([moment(row.Date).valueOf(), 0]);
           yValues.DeathsInc && deathsInc.push([moment(row.Date).valueOf(), 0]);
           yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), 0]);
+          yValues.ActiveInc && activeInc.push([moment(row.Date).valueOf(), 0]);
         } else {
           let lastRow = data[index-1];
           yValues.ConfirmedInc && confirmedInc.push([moment(row.Date).valueOf(), row.Confirmed - lastRow.Confirmed]);
           yValues.DeathsInc && deathsInc.push([moment(row.Date).valueOf(), row.Deaths - lastRow.Deaths]);
-          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), row.Recovered - lastRow.Recovered]);  
+          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), row.Recovered - lastRow.Recovered]);
+          yValues.ActiveInc && activeInc.push([moment(row.Date).valueOf(), row.Active - lastRow.Active]);
         }
       });
 
@@ -124,9 +131,11 @@ class MakeChart extends Component<MakeChartProps, any> {
       yValues.Confirmed && series.push({ type: 'area', name: 'Confirmed', data: confirmed });
       yValues.Deaths && series.push({ type: 'area', name: 'Deaths', data: deaths });
       yValues.Recovered && series.push({ type: 'area', name: 'Recovered', data: recovered });
+      yValues.Active && series.push({ type: 'area', name: 'Active', data: active });
       yValues.ConfirmedInc && series.push({ type: 'area', name: 'ConfirmedInc', data: confirmedInc });
       yValues.DeathsInc && series.push({ type: 'area', name: 'DeathsInc', data: deathsInc });
       yValues.RecoveredInc && series.push({ type: 'area', name: 'RecoveredInc', data: recoveredInc });
+      yValues.ActiveInc && series.push({ type: 'area', name: 'ActiveInc', data: activeInc });
 
       this.setState({ series });  
     } 
