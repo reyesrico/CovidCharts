@@ -9,6 +9,16 @@
   padding-bottom: 12px;
   padding-left: 8px;
   border-bottom: solid 2px gray;
+  width: 100%;
+}
+
+.covid__subtitle {
+  background-color: lightgray;
+  margin: 0;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-left: 8px;
+  border-bottom: solid 2px gray;
   margin-bottom: 8px;
   width: 100%;
 }
@@ -86,7 +96,8 @@
     align-items: center;
   }
 
-  .covid__title {
+  .covid__title,
+  .covid__subtitle {
     display: flex;
     flex-direction: column;
     justify-content: center;

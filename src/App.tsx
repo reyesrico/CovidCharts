@@ -173,6 +173,7 @@ class App extends Component<any, any> {
     return (
       <div className="covid">
         <h2 className="covid__title">COVID {countrySelected.label} Charts</h2>
+        <h3 className="covid__subtitle">Data Source: <a href="https://github.com/CSSEGISandData/COVID-19">Johns Hopkins CSSE</a></h3>
         <Instructions countrySelected={countrySelected} />
         <div className="covid__dropdowns">
           <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
