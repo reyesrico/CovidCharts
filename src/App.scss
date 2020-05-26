@@ -23,6 +23,12 @@
   width: 100%;
 }
 
+.covid__error {
+  background-color: lightgoldenrodyellow;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
 .covid__chart {
   display: flex;
   flex-direction: column;

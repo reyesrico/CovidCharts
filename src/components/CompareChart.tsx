@@ -2,21 +2,31 @@ import React, { Component } from 'react';
 import { isEqual } from 'lodash';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
+import ChartOptions from './ChartOptions';
 import { CountryDataRow, CompareChartProps } from '../types/types';
 import { getCountry } from '../helpers/Service';
 import { updateDates } from '../helpers/CovidHelper';
 
+import './CompareChart.scss';
+
 class CompareChart extends Component<CompareChartProps, any> {
   state = {
     isLoading: false,
-    countryData: []
+    countryData: [],
+    yValues: [
+      { value: 'Confirmed', text: 'Confirmed' }, 
+      { value: 'Deaths', text: 'Deaths' },
+      { value: 'Recovered', text: 'Recovered' }, 
+      { value: 'Active', text: 'Active' },
+    ],
+    selectedY: 'Confirmed'
   }
 
   componentDidMount() {
     this.getCountryInfo();
   }
 
-  componentDidUpdate(prevProps: CompareChartProps) {
+  componentDidUpdate(prevProps: CompareChartProps, prevState: any) {
     const { countryCompare } = this.props;
 
     if (!isEqual(prevProps.countryCompare, countryCompare)) {
@@ -37,9 +47,10 @@ class CompareChart extends Component<CompareChartProps, any> {
     }
   }
 
+
   getData = () => {
     const { data, countryCompare } = this.props;
-    const { countryData } = this.state;
+    const { countryData, selectedY } = this.state;
 
     let series: any = [];
 
@@ -52,9 +63,12 @@ class CompareChart extends Component<CompareChartProps, any> {
 
       series = data.map((row: CountryDataRow) => {
         let otherCountry: CountryDataRow = map[row.Date];
+
         return {
-          [row.Country]: row.Confirmed,
-          [countryCompare.label]: otherCountry ? otherCountry.Confirmed : 0,
+          // @ts-ignore
+          [row.Country]: row[selectedY],
+          // @ts-ignore
+          [countryCompare.label]: otherCountry ? otherCountry[selectedY] : 0,
           Date: row.Date
         };
       });
@@ -95,13 +109,27 @@ class CompareChart extends Component<CompareChartProps, any> {
       </AreaChart>);
   }
 
+  renderOptions = () => {
+    const { yValues, selectedY } = this.state;
+   
+    return (
+      <div className="compare-chart__options">
+        <div className="compare-chart__values">Values (Y Axis)</div>
+        <ChartOptions options={yValues} selected={selectedY}
+          onChange={(event: any) => event && this.setState({ selectedY: event.target.value })} />
+      </div>
+    )
+  }
+
   render() {
     const { hasProvinces } = this.props;
 
     if (hasProvinces) return <div>Country not available to compare</div>;
 
     return (
-      <div>
+      <div className="compare-chart">
+        {this.renderOptions()}
+        <hr />
         {this.renderChart()}
       </div>
     )

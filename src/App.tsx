@@ -31,6 +31,7 @@ class App extends Component<any, any> {
     cities: [],
     citySelected: { name: null, value: '', label: null },
     usMap: {},
+    isError: false,
     width: 500
   }
 
@@ -49,12 +50,14 @@ class App extends Component<any, any> {
         return { ...row, value: row.Slug, label: row.Country, name: row.Slug };
       });
 
-      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[0], width });
+      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[81], width });
     });
   }
 
   componentDidUpdate(prevProps: any, prevState: any) {
-    if (!this.state.isLoading) {
+    if (this.state.isError) {
+      this.getCountryInfo();
+    } else if (!this.state.isLoading) {
       if (!isEqual(prevState.countrySelected, this.state.countrySelected)) {
         this.getCountryInfo();
       } else {
@@ -71,7 +74,7 @@ class App extends Component<any, any> {
   getCountryInfo = () => {
     const { countrySelected } = this.state;
 
-    this.setState({ isLoading: true });
+    this.setState({ isLoading: true, isError: false });
 
     getCountry(countrySelected.value)
       .then(res => {
@@ -101,6 +104,7 @@ class App extends Component<any, any> {
           });
         }
       })
+      .catch(() => this.setState({ isError: true }))
       .finally(() => this.setState({ isLoading: false }));
   }
 
@@ -151,7 +155,7 @@ class App extends Component<any, any> {
     const { country, countries, countryCompare, width} = this.state;
     return (
       <div className="covid__chart">
-        <h3 className="covid__chart-text">Compare Confirmed with other country</h3>
+        <h3 className="covid__chart-text">Compare with other country</h3>
         <div className="covid__chart-select">
           <Select onChange={(countryCompare: any) => this.setState({ countryCompare })} options={countries} value={countryCompare} />
         </div>
@@ -159,10 +163,15 @@ class App extends Component<any, any> {
       </div>
     );
   }
+  
+  renderTitle = () => {
+    const { citySelected, provinceSelected, countrySelected } = this.state;
+    return citySelected?.label ?? provinceSelected?.label  ?? countrySelected.label;
+  }
 
   render() {
     const { country, countries, countrySelected, isLoading, provinces,
-      provinceSelected, cities, citySelected, usMap, width } = this.state;
+      provinceSelected, cities, citySelected, usMap, width, isError } = this.state;
 
     let countryText = countrySelected.label ?? 'Country';
     if (!countries.length || isLoading) return (<Loading size="xl" message={`Loading ${countryText} Data`} />);
@@ -175,6 +184,7 @@ class App extends Component<any, any> {
         <h2 className="covid__title">COVID {countrySelected.label} Charts</h2>
         <h3 className="covid__subtitle">Data Source: <a href="https://github.com/CSSEGISandData/COVID-19">Johns Hopkins CSSE</a></h3>
         <Instructions countrySelected={countrySelected} />
+        {isError && <div className="covid__error">Error Getting Data: Try Again</div>}
         <div className="covid__dropdowns">
           <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
           {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}
@@ -190,7 +200,7 @@ class App extends Component<any, any> {
           <hr />
           {!countryHasProvince && this.renderCompareChart(countryHasProvince)}
           <hr />
-          <h3 className="covid__chart-text">Make Your Own Chart</h3>
+          <h3 className="covid__chart-text">Make Your Own {this.renderTitle()} Chart</h3>
           <MakeChart countries={countries} data={this.getData(country, false, false)} map={usMap} width={width} />
           <hr />
           <div className="covid__texts">

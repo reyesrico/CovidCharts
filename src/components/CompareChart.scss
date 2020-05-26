@@ -1,0 +1,28 @@
+.compare-chart {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.compare-chart__options {
+  margin-right: 12px;
+  padding: 12px;
+  background-color: lightgray;
+}
+
+.compare-chart__values {
+  font-weight: bold;
+  font-size: 14px;
+  border-bottom: solid 2px gray;
+  margin-bottom: 4px;
+}
+
+@media screen and (max-width: 500px) {
+  .compare-chart {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+}
