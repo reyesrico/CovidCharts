@@ -79,7 +79,6 @@ class MakeChart extends Component<MakeChartProps, any> {
   getData = () => {
     const { data } = this.props;
     const { yValues } = this.state;
-    console.log(`merol: ${this.yValuesFalse()}`)
 
     if (!this.yValuesFalse()) {
       let confirmed: any = [];
