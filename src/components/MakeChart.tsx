@@ -102,7 +102,7 @@ class MakeChart extends Component<MakeChartProps, any> {
           let lastRow = data[index-1];
           yValues.ConfirmedInc && confirmedInc.push([moment(row.Date).valueOf(), row.Confirmed - lastRow.Confirmed]);
           yValues.DeathsInc && deathsInc.push([moment(row.Date).valueOf(), row.Deaths - lastRow.Deaths]);
-          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), row.Recovered, row.Recovered - lastRow.Recovered]);  
+          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), row.Recovered - lastRow.Recovered]);  
         }
       });
 
