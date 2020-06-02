@@ -14,3 +14,16 @@
   font-weight: bold;
   margin-top: 8px;
 }
+
+@media screen and (max-width: 500px) {
+  .projections {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .projections__train-btn {
+    margin-bottom: 12px;
+  }
+}

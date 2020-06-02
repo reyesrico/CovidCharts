@@ -3,5 +3,6 @@ import DataType from './DataType';
 
 export default interface ProjectionsProps {
   data: CountryDataRow[],
-  type: DataType
+  type: DataType,
+  width: number
 }

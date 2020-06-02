@@ -66,6 +66,8 @@
 .covid__texts {
   display: flex;
   flex-direction: row;
+  align-items: center;
+  text-align: center;
 }
 
 .covid__text {
@@ -119,6 +121,10 @@
 
   .covid__chart-select {
     width: 90%;
+  }
+
+  .covid__text {
+    max-width: 130px;
   }
 
   .css-2b097c-container {

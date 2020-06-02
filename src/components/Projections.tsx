@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import moment from 'moment';
-import { isEmpty } from 'lodash';
+import { isEmpty, isEqual } from 'lodash';
 
 import CountryDataRow from '../types/CountryDataRow';
 import ProjectionsProps from '../types/ProjectionsProps';
@@ -31,6 +31,32 @@ class Projections extends Component<ProjectionsProps, any> {
     const { windowSize } = this.state;
 
     this.setState({ trainedData: computeSMA(data, type, windowSize) });
+  }
+
+  componentDidUpdate(prevProps: ProjectionsProps, prevState: any) {
+    const { data } = this.props;
+
+    if (!isEqual(prevProps.data, data)) {
+      this.clearState();
+    }
+  }
+
+  clearState = () => {
+    const { data, type } = this.props;
+    const { windowSize } = this.state;
+
+    this.setState({
+      projectedData: [],
+      trainedData: computeSMA(data, type, windowSize),
+      modelTrained: {},
+      readingEpoch: 0,
+      windowSize: 7,
+      epochSize: 7,
+      trainingSize: 70,
+      predValues: [],
+      predTimestamps: [],
+      loadingTrain: false  
+    });
   }
 
   getSeries = (showProjected: boolean) => {
@@ -66,9 +92,11 @@ class Projections extends Component<ProjectionsProps, any> {
   }
 
   renderChart(showProjected: boolean = false) {
+    const { width } = this.props;
+
     const plotOptions = {
       ...options,
-      chart: { ...options.chart, width: 500 },
+      chart: { ...options.chart, width },
       series: this.getSeries(showProjected)
     };
 
@@ -161,7 +189,7 @@ class Projections extends Component<ProjectionsProps, any> {
         {trainedData && this.renderChart()}
         <hr />
         <h3>Training</h3>
-        <button onClick={event => event && this.trainModel()} disabled={loadingTrain}>Train Model</button>
+        <button className="projections__train-btn" onClick={event => event && this.trainModel()} disabled={loadingTrain}>Train Model</button>
         {loadingTrain && this.renderLoading()}
         {!loadingTrain && !isEmpty(modelTrained) && (<div className="projections__model-trained">Model Trained!</div>)}
         <hr />
