@@ -1,9 +1,17 @@
-.stuffie-loading {
+.loading {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.stuffie-loading {
+  @extend .loading;
   height: 100vh;
+}
+
+.stuffie-loading-progress {
+  @extend .loading;
 }
 
 .stuffie-loading__message {

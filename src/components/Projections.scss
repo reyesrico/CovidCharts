@@ -1,0 +1,16 @@
+.column-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.projections__loading {
+  @extend .column-center;
+}
+
+.projections__model-trained {
+  @extend .column-center;
+  font-weight: bold;
+  margin-top: 8px;
+}

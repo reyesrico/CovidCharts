@@ -3,7 +3,8 @@ import { isEqual } from 'lodash';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
 import ChartOptions from './ChartOptions';
-import { CountryDataRow, CompareChartProps } from '../types/types';
+import CompareChartProps from '../types/CompareChartProps';
+import CountryDataRow from '../types/CountryDataRow';
 import { getCountry } from '../helpers/Service';
 import { updateDates } from '../helpers/CovidHelper';
 

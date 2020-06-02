@@ -4,8 +4,9 @@ import HighchartsReact from 'highcharts-react-official';
 import moment from 'moment';
 import { isEqual, isEmpty } from 'lodash';
 
+import CountryDataRow from '../types/CountryDataRow';
+import MakeChartProps from '../types/MakeChartProps';
 import options from '../helpers/charts';
-import { MakeChartProps, CountryDataRow } from '../types/types';
 
 import './MakeChart.scss';
 

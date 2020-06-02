@@ -3,16 +3,17 @@ import Select from 'react-select';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { isEqual, sortBy } from 'lodash';
 
+import CompareChart from './components/CompareChart';
+import CountryDataRow from './types/CountryDataRow';
 import Footer from './components/Footer';
 import Instructions from './components/Instructions';
 import Loading from './components/Loading';
 import MakeChart from './components/MakeChart';
-import { CountryDataRow } from './types/types';
+import Projections from './components/Projections';
 import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
 import { getCountry, getCountries } from './helpers/Service';
 
 import './App.scss';
-import CompareChart from './components/CompareChart';
 
 class App extends Component<any, any> {
   state = {
@@ -208,6 +209,9 @@ class App extends Component<any, any> {
             {countryHasProvince && <div className="covid__text">{provinceSelected?.label}</div>}
             {countryHasCity && <div className="covid__text">{citySelected?.label}</div>}
           </div>
+          <hr />
+          <h3 className="covid__chart-text">Projections</h3>
+          {country.length && <Projections data={this.getData(country, false, false)} type="Confirmed" />}
         </div>
         <Footer />
       </div>

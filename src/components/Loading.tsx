@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactLoading from 'react-loading';
-import { LoadingProps } from '../types/types';
+import LoadingProps from '../types/LoadingProps';
 
 import './Loading.scss';
 
@@ -21,11 +21,11 @@ class Loading extends Component<LoadingProps, any> {
   }
 
   render() {
-    const { message } = this.props;
+    const { message, showProgress } = this.props;
     const size = this.getSize();
 
     return (
-      <div className="stuffie-loading">
+      <div className={showProgress? "stuffie-loading-progress" : "stuffie-loading"}>
         <ReactLoading type="spin" color="#00f" height={size} width={size} />
         {message && (<div className="stuffie-loading__message">{message}</div>)} 
       </div>
