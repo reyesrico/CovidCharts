@@ -17,6 +17,7 @@
     "lodash": "^4.17.15",
     "moment": "^2.26.0",
     "node-sass": "^4.14.1",
+    "nostradamus": "^0.1.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-loading": "^2.0.3",

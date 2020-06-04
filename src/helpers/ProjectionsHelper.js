@@ -1,6 +1,45 @@
 import * as tf from '@tensorflow/tfjs';
 
 // https://github.com/jinglescode/demos/tree/master/src/app/components/tfjs-timeseries-stocks
+    /* REAL VALUES
+    array = [
+      { date: day1, confirmed: 1 },
+      { date: day2, confirmed: 1 },
+      { date: day3, confirmed: 1 },
+      { date: day4, confirmed: 1 },
+      { date: day5, confirmed: 1 },
+      { date: day6, confirmed: 1 },
+      { date: day7, confirmed: 1 },      
+      { date: day8, confirmed: 2 },
+      { date: day9, confirmed: 3 },
+      { date: day10, confirmed: 10 },
+      ...
+    ]
+    */
+    
+
+    /*  INPUTS (COMPUTED SMA)
+    array = [
+      [1, 1, 1, 1, 1, 1, 1],   // Values of confirmed from day1- day7
+      [1, 1, 1, 1, 1, 1, 2],   // Values of confirmed from day2 - day8
+      [1, 1, 1, 1, 1, 2, 3],   // values of confirmed from day3 - day9
+      [1, 1, 1, ,1 2, 3, 10],  // values of confirmed from day4 - day10
+      ...
+    ]
+    */
+
+    /* OUTPUTS (COMPUTED SMA) -AVG / ARRAY INPUTS
+    array = [
+      0.999991,
+      0.999998,
+      1.2,
+      1.6,
+      5,
+      ...
+    ]
+
+    THESE VALUES ARE THE BLACK LINE !!!
+    */
 export function computeSMA (data, type, window_size) {
   let r_avgs = []
   // let avg_prev = 0;
@@ -19,13 +58,13 @@ export function computeSMA (data, type, window_size) {
 // https://raw.githubusercontent.com/jinglescode/demos/master/src/app/components/tfjs-timeseries-stocks/standalone_demo/model.js
 export async function trainModel(inputs, outputs, trainingsize, window_size, n_epochs, learning_rate, n_layers, callback) {
   const input_layer_shape  = window_size;
-  const input_layer_neurons = window_size*2; // 100 - TBR 
+  const input_layer_neurons = 100; // window_size*2; // 100 - TBR 
 
-  const rnn_input_layer_features = 2; // 10B-- TBR
+  const rnn_input_layer_features = 10; // 2; // 10B-- TBR
   const rnn_input_layer_timesteps = input_layer_neurons / rnn_input_layer_features;
 
   const rnn_input_shape  = [rnn_input_layer_features, rnn_input_layer_timesteps];
-  const rnn_output_neurons = 3; // 20
+  const rnn_output_neurons = 20; // 3; // 20
 
   const rnn_batch_size = window_size;
 

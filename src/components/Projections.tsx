@@ -19,8 +19,10 @@ class Projections extends Component<ProjectionsProps, any> {
     modelTrained: {},
     readingEpoch: 0,
     windowSize: 7,
-    epochSize: 7,
+    epochSize: 1000,       // or bigger
     trainingSize: 70,     // Value in %
+    learningRate: 0.01,
+    hiddenLayers: 1,
     predValues: [],
     predTimestamps: [],
     loadingTrain: false
@@ -53,6 +55,8 @@ class Projections extends Component<ProjectionsProps, any> {
       windowSize: 7,
       epochSize: 7,
       trainingSize: 70,
+      learningRate: 0.1,
+      hiddenLayers: 1,  
       predValues: [],
       predTimestamps: [],
       loadingTrain: false  
@@ -105,10 +109,11 @@ class Projections extends Component<ProjectionsProps, any> {
 
   trainModel = async () => {
     const { type } = this.props;
-    const { trainedData, trainingSize, windowSize, epochSize } = this.state;
+    const { trainedData, trainingSize, windowSize, epochSize, learningRate, hiddenLayers } = this.state;
 
     this.setState({ loadingTrain: true });
     let epoch_loss: any = [];
+
     let inputs = trainedData.map((row: SMAType) => {
       return row['set'].map((val: CountryDataRow) => val[type])
     });
@@ -117,8 +122,8 @@ class Projections extends Component<ProjectionsProps, any> {
   
     let trainingsize = trainingSize;
     let n_epochs = epochSize;
-    let learningrate = 0.1;
-    let n_hiddenlayers = 8;
+    let learningrate = learningRate;
+    let n_hiddenlayers = hiddenLayers;
   
     let callback = (epoch: number, log: any) => {
       this.setState({ readingEpoch: epoch + 1});
@@ -128,7 +133,6 @@ class Projections extends Component<ProjectionsProps, any> {
     let modelTrained = await trainModel(inputs, outputs, trainingsize, windowSize, n_epochs, learningrate, n_hiddenlayers, callback);
     console.log(modelTrained);
     console.log(epoch_loss);
-    console.log(trainingsize);
     this.setState({ modelTrained, loadingTrain: false });
   }
 
@@ -142,7 +146,11 @@ class Projections extends Component<ProjectionsProps, any> {
       return row['set'].map((val: CountryDataRow) => val[type])
     });
 
+    console.log(inputs);
+
     let outputs = trainedData.map((row: SMAType) => row.avg);
+
+    console.log(outputs);
 
     let trainingsize = trainingSize;
 
@@ -196,8 +204,7 @@ class Projections extends Component<ProjectionsProps, any> {
         <h3>Validate</h3>
         <button onClick={event => event && this.predict()} disabled={isEmpty(modelTrained)}>Predict (See Console)</button>
         {!!predValues.length && this.renderChart(true)}
-      </div>
-      
+      </div>      
     )
   }
 }
