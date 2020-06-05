@@ -19,9 +19,9 @@ class Projections extends Component<ProjectionsProps, any> {
     modelTrained: {},
     readingEpoch: 0,
     windowSize: 7,
-    epochSize: 1000,       // or bigger
+    epochSize: 10,       // 1000 takes so much time!
     trainingSize: 70,     // Value in %
-    learningRate: 0.01,
+    learningRate: 0.1,   // Learn super fast!
     hiddenLayers: 1,
     predValues: [],
     predTimestamps: [],

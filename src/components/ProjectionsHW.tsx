@@ -40,8 +40,6 @@ class ProjectionsHW extends Component<ProjectionsProps, any> {
     const { data, type } = this.props;
     const { period } = this.state;
 
-    console.log(data);
-
     const values = data.map((row: CountryDataRow) => row[type]);
     const limit = values.length % period;
     // console.log(limit);

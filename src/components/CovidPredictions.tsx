@@ -11,7 +11,7 @@ import ProjectionsProps from '../types/ProjectionsProps';
 import options from '../helpers/charts';
 import './CovidPredictions.scss';
 
-import { clearPrint, processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler } from '../helpers/predictionsHelper';
+import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler } from '../helpers/predictionsHelper';
 
 class CovidPredictions extends Component<ProjectionsProps, any> {
   state = {
@@ -19,7 +19,8 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
     timePortion: 7,
     predictedData: [],
     predictedDates: [],
-    isLoading: false
+    isLoading: false,
+    message: ''
   }
 
   componentDidMount() {
@@ -121,27 +122,26 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
     const { data, type } = this.props;
     const { timePortion, epochs } = this.state;
 
-    clearPrint();
-    console.log("Beginning Stock Prediction ...");
+    // clearPrint();
+    // console.log("Beginning Stock Prediction ...");
 
     // Get the datetime labels use in graph
     let labels = data.map((row: CountryDataRow) => row.Date);    // DATES!!!
 
-    this.setState({ isLoading: true });
+    this.setState({ isLoading: true, message: 'Processing...' });
     // Process the data and create the train sets
     processData(data, type, timePortion).then(result => {     // TIMEPORTION IS WINDOWSIZE
-      console.log(result);
+      // console.log(result);
 
       // Crate the set for stock price prediction for the next day
       let nextDayPrediction = generateNextDayPrediction(result.originalData, result.timePortion);
 
-      console.log(`nextDayPrediction`);
-      console.log(nextDayPrediction);
-
       // Get the last date from the data set
       // @ts-ignore
-      // let predictDate = (new Date(labels[labels.length - 1] + 'T00:00:00.000')).addDays(1);
+      // let predictDate = (new Date(labels[labels.length - 1])).addDays(1);
+      // console.log(predictDate);
 
+      this.setState({ message: "Building CNN "});
       // Build the Convolutional Tensorflow model
       this.buildCnn(result).then((built: any) => {
 
@@ -156,6 +156,7 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
         let max = built.data.max;
         let min = built.data.min;
 
+        this.setState({ message: "Getting model" });
         // Train the model using the tensor data
         // Repeat multiple epochs so the error rate is smaller (better fit for the data)
         this.cnn(built.model, tensorData, epochs).then((model: any) => {
@@ -172,11 +173,15 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
           // Predict the next day stock price
           let predictedValue = model.predict(tensorNextDayPrediction);
 
+          this.setState({ message: "Getting predictedValue data" });
           // Get the predicted data for the train set
           predictedValue.data().then((predValue: any) => {
+
             // Revert the scaled features, so we get the real values
             let inversePredictedValue = minMaxInverseScaler(predValue, min, max);
+            // console.log(inversePredictedValue);
 
+            this.setState({ message: "Finishing and cleaning data "});
             // Get the next day predicted value
             predictedX.data().then((pred: any) => {
               // Revert the scaled feature
@@ -185,25 +190,24 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
               // Convert Float32Array to regular Array, so we can add additional value
               predictedXInverse.data = Array.prototype.slice.call(predictedXInverse.data);
               // Add the next day predicted stock price so it's showed on the graph
-              predictedXInverse.data[predictedXInverse.data.length] = inversePredictedValue.data[0];
+              predictedXInverse.data = [
+                ...predictedXInverse.data,
+                ...nextDayPrediction,            // FALTAN 7 DIAS QUE SE QUITARON PARA PRONOSTICAR EL ULTIMA
+                ...inversePredictedValue.data];  // EL ULTIMO
+              // predictedXInverse.data[predictedXInverse.data.length] = inversePredictedValue.data[0];
 
               // Revert the scaled labels from the trainY (original), 
               // so we can compare them with the predicted one
-              var trainYInverse = minMaxInverseScaler(built.data.trainY, min, max);
+              // var trainYInverse = minMaxInverseScaler(built.data.trainY, min, max);
 
               // Plot the original (trainY) and predicted values for the same features set (trainX)
               // plotData(trainYInverse.data, predictedXInverse.data, labels);
-              console.log(trainYInverse.data);
-              // console.log(predictedXInverse.data);
+              // console.log(trainYInverse.data);   // 123   vs 130 total
+              // console.log(predictedXInverse.data);  // 124   (123 + 1)
+              // console.log(labels);  // 130 ?
 
-              this.setState({ predictedData: predictedXInverse.data, predictedDates: labels, isLoading: false });
+              this.setState({ predictedData: predictedXInverse.data, predictedDates: labels, isLoading: false, message: "" });
             });
-
-            // Print the predicted stock price value for the next day
-            // console.log("Predicted for date " + moment(predictDate).format("DD-MM-YYYY") + " is: " + inversePredictedValue.data[0].toFixed(3) + "$");
-
-            console.log(`Predicted Values!!`);
-            console.log(inversePredictedValue);
           });
         });
       });
@@ -244,12 +248,12 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
   }
 
   render() {
-    const { isLoading } = this.state;
+    const { isLoading, message } = this.state;
 
     return (
       <div className="covid-predictions">
-        {isLoading && (<Loading size="lg" message="Training Data" />)}
-        {this.renderChart()}
+        {isLoading && (<Loading size="lg" message={message} showProgress={true} />)}
+        {!isLoading && this.renderChart()}
       </div>
     );
   }

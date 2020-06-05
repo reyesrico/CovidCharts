@@ -8,10 +8,10 @@ export const processData = function (data, type, timePortion) {
   return new Promise(function (resolve, reject) {
       let trainX = [], trainY = [], size = data.length;
 
-      let features = [];
-      for (let i = 0; i < size; i++) {
-          features.push(data[i][type]);                            // AQUI ESTAN LOS VALUES
-      }
+      let features = data.map(row => row[type]);
+      // for (let i = 0; i < size; i++) {
+      //     features.push(data[i][type]);                            // AQUI ESTAN LOS VALUES
+      // }
 
       // Scale the values
       var scaledData = minMaxScaler(features, getMin(features), getMax(features));
