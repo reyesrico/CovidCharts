@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import * as tf from '@tensorflow/tfjs';
+
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import moment from 'moment';
@@ -11,7 +12,7 @@ import ProjectionsProps from '../types/ProjectionsProps';
 import options from '../helpers/charts';
 import './CovidPredictions.scss';
 
-import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler } from '../helpers/predictionsHelper';
+import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler, getMin, getMax } from '../helpers/predictionsHelper';
 
 class CovidPredictions extends Component<ProjectionsProps, any> {
   state = {
@@ -20,7 +21,10 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
     predictedData: [],
     predictedDates: [],
     isLoading: false,
-    message: ''
+    message: '',
+    error: null,
+    model: { predict: (rank: any) => {} },
+    wait: false,
   }
 
   componentDidMount() {
@@ -87,15 +91,19 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
         activation: 'linear'
       }));
 
-      return resolve({
-        'model': model,
-        'data': data
-      });
+      if (model) {
+        return resolve({
+          'model': model,
+          'data': data
+        });  
+      } else {
+        return reject(`Model not created`);
+      }
     });
   }
 
   cnn = (model: any, data: any, epochs: number) => {
-    console.log("MODEL SUMMARY: ")
+    // console.log("MODEL SUMMARY: ")
     model.summary();
 
     return new Promise((resolve, reject) => {
@@ -105,10 +113,7 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
 
         // Train the model
         model.fit(data.tensorTrainX, data.tensorTrainY, { epochs: epochs }).then((result: any) => {
-          /*for (let i = result.epoch.length-1; i < result.epoch.length; ++i) {
-              print("Loss after Epoch " + i + " : " + result.history.loss[i]);
-          }*/
-          console.log("Loss after last Epoch (" + result.epoch.length + ") is: " + result.history.loss[result.epoch.length - 1]);
+          // console.log("Loss after last Epoch (" + result.epoch.length + ") is: " + result.history.loss[result.epoch.length - 1]);
           resolve(model);
         });
       }
@@ -122,24 +127,16 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
     const { data, type } = this.props;
     const { timePortion, epochs } = this.state;
 
-    // clearPrint();
-    // console.log("Beginning Stock Prediction ...");
-
     // Get the datetime labels use in graph
     let labels = data.map((row: CountryDataRow) => row.Date);    // DATES!!!
 
     this.setState({ isLoading: true, message: 'Processing...' });
+
     // Process the data and create the train sets
     processData(data, type, timePortion).then(result => {     // TIMEPORTION IS WINDOWSIZE
-      // console.log(result);
 
       // Crate the set for stock price prediction for the next day
       let nextDayPrediction = generateNextDayPrediction(result.originalData, result.timePortion);
-
-      // Get the last date from the data set
-      // @ts-ignore
-      // let predictDate = (new Date(labels[labels.length - 1])).addDays(1);
-      // console.log(predictDate);
 
       this.setState({ message: "Building CNN "});
       // Build the Convolutional Tensorflow model
@@ -161,6 +158,8 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
         // Repeat multiple epochs so the error rate is smaller (better fit for the data)
         this.cnn(built.model, tensorData, epochs).then((model: any) => {
 
+          this.setState({ model });
+
           // Predict for the same train data
           // We gonna show the both (original, predicted) sets on the graph 
           // so we can see how well our model fits the data
@@ -170,6 +169,7 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
           let nextDayPredictionScaled = minMaxScaler(nextDayPrediction, min, max);
           // Transform to tensor data
           let tensorNextDayPrediction = tf.tensor1d(nextDayPredictionScaled.data).reshape([1, built.data.timePortion, 1]);
+
           // Predict the next day stock price
           let predictedValue = model.predict(tensorNextDayPrediction);
 
@@ -179,7 +179,6 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
 
             // Revert the scaled features, so we get the real values
             let inversePredictedValue = minMaxInverseScaler(predValue, min, max);
-            // console.log(inversePredictedValue);
 
             this.setState({ message: "Finishing and cleaning data "});
             // Get the next day predicted value
@@ -192,7 +191,6 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
               // Add the next day predicted stock price so it's showed on the graph
               predictedXInverse.data = [
                 ...predictedXInverse.data,
-                ...nextDayPrediction,            // FALTAN 7 DIAS QUE SE QUITARON PARA PRONOSTICAR EL ULTIMA
                 ...inversePredictedValue.data];  // EL ULTIMO
               // predictedXInverse.data[predictedXInverse.data.length] = inversePredictedValue.data[0];
 
@@ -209,8 +207,29 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
               this.setState({ predictedData: predictedXInverse.data, predictedDates: labels, isLoading: false, message: "" });
             });
           });
-        });
-      });
+        }, (error: any) => this.setState({ error, isLoading: false }));
+      }, (error: any) => this.setState({ error, isLoading: false }));
+    });
+  }
+
+  predictMore = () => {
+    const { predictedData, timePortion, model } = this.state;
+
+    this.setState({ wait: true });
+    let data = [...predictedData];
+    let nextDayPrediction = generateNextDayPrediction(data, timePortion);
+
+    let min = getMin(predictedData);
+    let max = getMax(predictedData);
+    let nextDayPredictionScaled = minMaxScaler(nextDayPrediction, min, max);
+    let tensorNextDayPrediction = tf.tensor1d(nextDayPredictionScaled.data).reshape([1, timePortion, 1]);
+    let newPredictedValue = model.predict(tensorNextDayPrediction);
+
+    // @ts-ignore
+    newPredictedValue.data().then((pred: any) => {
+      let predictedXInverse = minMaxInverseScaler(pred, min, max);
+      predictedXInverse.data = Array.prototype.slice.call(predictedXInverse.data);
+      this.setState({ predictedData: [...predictedData, ...predictedXInverse.data], wait: false });
     });
   }
 
@@ -221,11 +240,13 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
     let series: any = [];
     let current = data.map((row: CountryDataRow) => [moment(row.Date).valueOf(), row.Confirmed]);
     let predicted = null;
+    let dates: any = [];
 
     if (predictedData.length && predictedDates.length) {
       predicted = predictedData.map((value: number, index: number) => {
-        let predictedValue = (index < timePortion) ? 0 : value;
-        return [moment(predictedDates[index]).valueOf(), predictedValue];
+        const momentDate = predictedDates.length > (index + timePortion) ? moment(predictedDates[index + timePortion]) : dates[dates.length-1].add(1, 'days');
+        dates.push(momentDate);  
+        return [momentDate.valueOf(), value];
       });
     }
 
@@ -248,12 +269,14 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
   }
 
   render() {
-    const { isLoading, message } = this.state;
+    const { isLoading, message, error, wait } = this.state;
 
     return (
       <div className="covid-predictions">
         {isLoading && (<Loading size="lg" message={message} showProgress={true} />)}
-        {!isLoading && this.renderChart()}
+        {error && <div>Couldn't load chart: {error}</div>}
+        {!isLoading && !error && this.renderChart()}
+        {!isLoading && !error && <button disabled={wait} onClick={event => event && this.predictMore()}>Predict next day!</button>}
       </div>
     );
   }
