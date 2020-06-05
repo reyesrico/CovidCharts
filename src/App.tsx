@@ -5,6 +5,7 @@ import { isEqual, sortBy } from 'lodash';
 
 import CompareChart from './components/CompareChart';
 import CountryDataRow from './types/CountryDataRow';
+import CovidPredictions from './components/CovidPredictions';
 import Footer from './components/Footer';
 import Instructions from './components/Instructions';
 import Loading from './components/Loading';
@@ -210,6 +211,9 @@ class App extends Component<any, any> {
             {countryHasProvince && <div className="covid__text">{provinceSelected?.label}</div>}
             {countryHasCity && <div className="covid__text">{citySelected?.label}</div>}
           </div>
+          <hr />
+          <h3 className="covid__chart-text">Covid Preditions (based on StockPredictions)</h3>
+          {country.length && <CovidPredictions data={this.getData(country, false, false)} type="Confirmed" width={width} />}
           <hr />
           <h3 className="covid__chart-text">Confirmed Type Projections Holt-Winter</h3>
           {country.length && <ProjectionsHW data={this.getData(country, false, false)} type="Confirmed" width={width} />}

@@ -40,9 +40,11 @@ class ProjectionsHW extends Component<ProjectionsProps, any> {
     const { data, type } = this.props;
     const { period } = this.state;
 
+    console.log(data);
+
     const values = data.map((row: CountryDataRow) => row[type]);
     const limit = values.length % period;
-    console.log(limit);
+    // console.log(limit);
 
     const valuesLimited = values.slice(limit);
 
@@ -55,11 +57,14 @@ class ProjectionsHW extends Component<ProjectionsProps, any> {
     const { predictions, period } = this.state;
 
     let series: any = [];
-    let dateSize = moment(data[1].Date).valueOf() - moment(data[0].Date).valueOf();
+    let dateSize = (data.length >= 2 &&
+      data[0].Date &&
+      data[1].Date &&
+      (moment(data[1].Date).valueOf() - moment(data[0].Date).valueOf())) || 0;
     const limit = data.length % period;
 
     let typeSeries = data.map((row: CountryDataRow) => [moment(row.Date).valueOf(), row[type]]);
-    let date = typeSeries[0][0];
+    let date = typeSeries?.[0]?.[0];
 
     let predicted = predictions.map((value: number, index: number) => {
       const typeIndex = index + limit;
@@ -96,8 +101,9 @@ class ProjectionsHW extends Component<ProjectionsProps, any> {
     return (
     <div className="projections">
       <h3>Projections using Holt-Winters</h3>
-      {!predictions.length && <div>Loading</div>}
-      {predictions.length && this.renderChart()}
+      {!predictions && <div>No Predictions</div>}
+      {predictions && !predictions.length && <div>Loading</div>}
+      {predictions && predictions.length && this.renderChart()}
     <hr />
     </div>);
   }
