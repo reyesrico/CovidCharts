@@ -7,14 +7,14 @@ import moment from 'moment';
 import { isEqual } from 'lodash';
 
 import CountryDataRow from '../types/CountryDataRow';
+import CovidPredictionsProps from '../types/CovidPredictionsProps';
 import Loading from './Loading';
-import ProjectionsProps from '../types/ProjectionsProps';
 import options from '../helpers/charts';
 import './CovidPredictions.scss';
 
 import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler, getMin, getMax } from '../helpers/predictionsHelper';
 
-class CovidPredictions extends Component<ProjectionsProps, any> {
+class CovidPredictions extends Component<CovidPredictionsProps, any> {
   state = {
     epochs: 100,
     timePortion: 7,
@@ -25,15 +25,30 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
     error: null,
     model: { predict: (rank: any) => {} },
     wait: false,
+    yValues: ['Confirmed', 'Deaths', 'Recovered', 'Active'],
+    type: 'Confirmed'
   }
 
-  componentDidMount() {
-    this.loadData();
-  }
-
-  componentDidUpdate(prevProps: ProjectionsProps, prevState: any) {
+  componentDidUpdate(prevProps: CovidPredictionsProps, prevState: any) {
     if (!isEqual(prevProps, this.props)) {
-      this.loadData();
+      this.setState({
+        predictedData: [],
+        predictedDates: [],
+        isLoading: false,
+        message: '',
+        error: null,
+        wait: false,
+        type: 'Confirmed'
+      });
+    } else if (!isEqual(prevState.type, this.state.type)) {
+      this.setState({
+        predictedData: [],
+        predictedDates: [],
+        isLoading: false,
+        message: '',
+        error: null,
+        wait: false,
+      });
     }
   }
 
@@ -124,8 +139,8 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
   }
 
   loadData = () => {
-    const { data, type } = this.props;
-    const { timePortion, epochs } = this.state;
+    const { data } = this.props;
+    const { timePortion, epochs, type } = this.state;
 
     // Get the datetime labels use in graph
     let labels = data.map((row: CountryDataRow) => row.Date);    // DATES!!!
@@ -139,6 +154,7 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
       let nextDayPrediction = generateNextDayPrediction(result.originalData, result.timePortion);
 
       this.setState({ message: "Building CNN "});
+
       // Build the Convolutional Tensorflow model
       this.buildCnn(result).then((built: any) => {
 
@@ -234,11 +250,12 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
   }
 
   getSeries = () => {
-    const { data, type } = this.props;
-    const { predictedData, predictedDates, timePortion } = this.state;
+    const { data } = this.props;
+    const { predictedData, predictedDates, timePortion, type } = this.state;
 
     let series: any = [];
-    let current = data.map((row: CountryDataRow) => [moment(row.Date).valueOf(), row.Confirmed]);
+    // @ts-ignore
+    let current = data.map((row: CountryDataRow) => [moment(row.Date).valueOf(), row[type]]);
     let predicted = null;
     let dates: any = [];
 
@@ -268,15 +285,43 @@ class CovidPredictions extends Component<ProjectionsProps, any> {
     return (<HighchartsReact highcharts={Highcharts} options={plotOptions} />);
   }
 
-  render() {
-    const { isLoading, message, error, wait } = this.state;
+  renderOptions = () => {
+    const { yValues, type } = this.state;
+   
+    return (
+      <div className="covid-predictions__options">
+        <div className="covid-predictions__values">Values (Y Axis)</div>
+        {yValues.map((yValue: string, index: number) => {
+          return (
+              <label className="covid-predictions__value" key={index}>
+                <input type="radio" value={yValue} checked={type === yValue}
+                  onChange={event => event && this.setState({ type: event.target.value })} />
+                {yValue}
+              </label>);
+        })}
+      </div>
+    )
+  }
+
+  renderChartState() {
+    const { isLoading, message, error, wait, predictedData } = this.state;
 
     return (
-      <div className="covid-predictions">
-        {isLoading && (<Loading size="lg" message={message} showProgress={true} />)}
+      <div className="covid-predictions__wrapper">
+        {<button disabled={isLoading || predictedData.length > 0} onClick={event => event && this.loadData()}>Generate Model!</button>}
+        {isLoading && (<Loading size="xl" message={message} showProgress={true} />)}
         {error && <div>Couldn't load chart: {error}</div>}
         {!isLoading && !error && this.renderChart()}
-        {!isLoading && !error && <button disabled={wait} onClick={event => event && this.predictMore()}>Predict next day!</button>}
+        {!!predictedData.length && !isLoading && !error && <button disabled={wait} onClick={event => event && this.predictMore()}>Predict next day!</button>}
+      </div>
+    )
+  }
+
+  render() {
+    return (
+      <div className="covid-predictions">
+        {this.renderOptions()}
+        {this.renderChartState()}
       </div>
     );
   }
