@@ -6,15 +6,15 @@ import HighchartsReact from 'highcharts-react-official';
 import moment from 'moment';
 import { isEqual } from 'lodash';
 
-import CountryDataRow from '../types/CountryDataRow';
-import CovidPredictionsProps from '../types/CovidPredictionsProps';
+// import CountryDataRow from '../types/CountryDataRow';
+// import CovidPredictionsProps from '../types/CovidPredictionsProps';
 import Loading from './Loading';
 import options from '../helpers/charts';
 import './CovidPredictions.scss';
 
 import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler, getMin, getMax } from '../helpers/predictionsHelper';
 
-class CovidPredictions extends Component<CovidPredictionsProps, any> {
+class CovidPredictions extends Component {
   state = {
     epochs: 100,
     timePortion: 7,
@@ -23,13 +23,13 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
     isLoading: false,
     message: '',
     error: null,
-    model: { predict: (rank: any) => {} },
+    model: { predict: (rank) => {} },
     wait: false,
     yValues: ['Confirmed', 'Deaths', 'Recovered', 'Active'],
     type: 'Confirmed'
   }
 
-  componentDidUpdate(prevProps: CovidPredictionsProps, prevState: any) {
+  componentDidUpdate(prevProps, prevState) {
     if (!isEqual(prevProps, this.props)) {
       this.setState({
         predictedData: [],
@@ -52,7 +52,7 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
     }
   }
 
-  buildCnn = (data: any) => {
+  buildCnn(data) {
     return new Promise((resolve, reject) => {
       // Linear (sequential) stack of layers
       let model = null;
@@ -120,7 +120,7 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
     });
   }
 
-  cnn = (model: any, data: any, epochs: number) => {
+  cnn(model, data, epochs){
     // console.log("MODEL SUMMARY: ")
     model.summary();
 
@@ -130,7 +130,7 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
         model.compile({ optimizer: 'adam', loss: 'meanSquaredError' });
 
         // Train the model
-        model.fit(data.tensorTrainX, data.tensorTrainY, { epochs: epochs }).then((result: any) => {
+        model.fit(data.tensorTrainX, data.tensorTrainY, { epochs: epochs }).then((result) => {
           // console.log("Loss after last Epoch (" + result.epoch.length + ") is: " + result.history.loss[result.epoch.length - 1]);
           resolve(model);
         });
@@ -141,12 +141,12 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
     });
   }
 
-  loadData = () => {
+  loadData() {
     const { data } = this.props;
     const { timePortion, epochs, type } = this.state;
 
     // Get the datetime labels use in graph
-    let labels = data.map((row: CountryDataRow) => row.Date);    // DATES!!!
+    let labels = data.map(row => row.Date);    // DATES!!!
 
     this.setState({ isLoading: true, message: 'Processing...' });
 
@@ -159,7 +159,7 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
       this.setState({ message: "Building CNN "});
 
       // Build the Convolutional Tensorflow model
-      this.buildCnn(result).then((built: any) => {
+      this.buildCnn(result).then(built => {
 
         // Transform the data to tensor data
         // Reshape the data in neural network input format [number_of_samples, timePortion, 1];
@@ -175,7 +175,7 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
         this.setState({ message: "Getting model" });
         // Train the model using the tensor data
         // Repeat multiple epochs so the error rate is smaller (better fit for the data)
-        this.cnn(built.model, tensorData, epochs).then((model: any) => {
+        this.cnn(built.model, tensorData, epochs).then((model) => {
 
           this.setState({ model });
 
@@ -194,14 +194,14 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
 
           this.setState({ message: "Getting predictedValue data" });
           // Get the predicted data for the train set
-          predictedValue.data().then((predValue: any) => {
+          predictedValue.data().then((predValue) => {
 
             // Revert the scaled features, so we get the real values
             let inversePredictedValue = minMaxInverseScaler(predValue, min, max);
 
             this.setState({ message: "Finishing and cleaning data "});
             // Get the next day predicted value
-            predictedX.data().then((pred: any) => {
+            predictedX.data().then((pred) => {
               // Revert the scaled feature
               var predictedXInverse = minMaxInverseScaler(pred, min, max);
 
@@ -226,8 +226,8 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
               this.setState({ predictedData: predictedXInverse.data, predictedDates: labels, isLoading: false, message: "" });
             });
           });
-        }, (error: any) => this.setState({ error, isLoading: false }));
-      }, (error: any) => this.setState({ error, isLoading: false }));
+        }, (error) => this.setState({ error, isLoading: false }));
+      }, (error) => this.setState({ error, isLoading: false }));
     });
   }
 
@@ -245,7 +245,7 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
     let newPredictedValue = model.predict(tensorNextDayPrediction);
 
     // @ts-ignore
-    newPredictedValue.data().then((pred: any) => {
+    newPredictedValue.data().then((pred) => {
       let predictedXInverse = minMaxInverseScaler(pred, min, max);
       predictedXInverse.data = Array.prototype.slice.call(predictedXInverse.data);
       this.setState({ predictedData: [...predictedData, ...predictedXInverse.data], wait: false });
@@ -256,14 +256,14 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
     const { data } = this.props;
     const { predictedData, predictedDates, timePortion, type } = this.state;
 
-    let series: any = [];
+    let series = [];
     // @ts-ignore
-    let current = data.map((row: CountryDataRow) => [moment(row.Date).valueOf(), row[type]]);
+    let current = data.map((row) => [moment(row.Date).valueOf(), row[type]]);
     let predicted = null;
-    let dates: any = [];
+    let dates = [];
 
     if (predictedData.length && predictedDates.length) {
-      predicted = predictedData.map((value: number, index: number) => {
+      predicted = predictedData.map((value, index) => {
         const momentDate = predictedDates.length > (index + timePortion) ? moment(predictedDates[index + timePortion]) : dates[dates.length-1].add(1, 'days');
         dates.push(momentDate);  
         return [momentDate.valueOf(), value];
@@ -294,7 +294,7 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
     return (
       <div className="covid-predictions__options">
         <div className="covid-predictions__values">Values (Y Axis)</div>
-        {yValues.map((yValue: string, index: number) => {
+        {yValues.map((yValue, index) => {
           return (
               <label className="covid-predictions__value" key={index}>
                 <input type="radio" value={yValue} checked={type === yValue}
