@@ -10,7 +10,7 @@ import Footer from './components/Footer';
 import Instructions from './components/Instructions';
 import Loading from './components/Loading';
 import MakeChart from './components/MakeChart';
-import Projections from './components/Projections';
+// import Projections from './components/Projections';
 import ProjectionsHW from './components/ProjectionsHW';
 import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
 import { getCountry, getCountries } from './helpers/Service';
@@ -218,8 +218,8 @@ class App extends Component<any, any> {
           <h3 className="covid__chart-text">Confirmed Type Projections Holt-Winter</h3>
           {country.length && <ProjectionsHW data={this.getData(country, false, false)} type="Confirmed" width={width} />}
           <hr />
-          <h3 className="covid__chart-text">Confirmed Type Projections</h3>
-          {country.length && <Projections data={this.getData(country, false, false)} type="Confirmed" width={width} />}
+          {/* <h3 className="covid__chart-text">Confirmed Type Projections</h3>
+          {country.length && <Projections data={this.getData(country, false, false)} type="Confirmed" width={width} />} */}
         </div>
         <Footer />
       </div>

@@ -55,22 +55,24 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
   buildCnn = (data: any) => {
     return new Promise((resolve, reject) => {
       // Linear (sequential) stack of layers
-      const model = tf.sequential();
+      let model = tf.sequential();
 
       // Define input layer
       model.add(tf.layers.inputLayer({
         inputShape: [7, 1],
       }));
 
-      // Add the first convolutional layer
-      model.add(tf.layers.conv1d({
+      let layer = tf.layers.conv1d({
         kernelSize: 2,
         filters: 128,
         strides: 1,
         useBias: true,
         activation: 'relu',
         kernelInitializer: 'VarianceScaling'
-      }));
+      });
+
+      // Add the first convolutional layer
+      model.add(layer);
 
       // Add the Average Pooling layer
       model.add(tf.layers.averagePooling1d({
@@ -304,20 +306,23 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
   }
 
   renderChartState() {
-    const { isLoading, message, error, wait, predictedData } = this.state;
+    const { isLoading, message, wait, predictedData } = this.state;
 
     return (
       <div className="covid-predictions__wrapper">
         {<button disabled={isLoading || predictedData.length > 0} onClick={event => event && this.loadData()}>Generate Model!</button>}
         {isLoading && (<Loading size="xl" message={message} showProgress={true} />)}
-        {error && <div>Couldn't load chart: {error}</div>}
-        {!isLoading && !error && this.renderChart()}
-        {!!predictedData.length && !isLoading && !error && <button disabled={wait} onClick={event => event && this.predictMore()}>Predict next day!</button>}
+        {!isLoading && this.renderChart()}
+        {!!predictedData.length && !isLoading && <button disabled={wait} onClick={event => event && this.predictMore()}>Predict next day!</button>}
       </div>
     )
   }
 
   render() {
+    const { error } = this.state;
+
+    if (error) return (<div>Couldn't load chart: {error}</div>);
+
     return (
       <div className="covid-predictions">
         {this.renderOptions()}
