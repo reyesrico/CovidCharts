@@ -10,9 +10,8 @@ import { isEqual } from 'lodash';
 // import CovidPredictionsProps from '../types/CovidPredictionsProps';
 import Loading from './Loading';
 import options from '../helpers/charts';
-import './CovidPredictions.scss';
-
 import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler, getMin, getMax } from '../helpers/predictionsHelper';
+import './CovidPredictions.scss';
 
 class CovidPredictions extends Component {
   state = {
@@ -156,7 +155,7 @@ class CovidPredictions extends Component {
       // Crate the set for stock price prediction for the next day
       let nextDayPrediction = generateNextDayPrediction(result.originalData, result.timePortion);
 
-      this.setState({ message: "Building CNN "});
+      this.setState({ message: "Getting model" });
 
       // Build the Convolutional Tensorflow model
       this.buildCnn(result).then(built => {
@@ -172,13 +171,11 @@ class CovidPredictions extends Component {
         let max = built.data.max;
         let min = built.data.min;
 
-        this.setState({ message: "Getting model" });
+        this.setState({ message: "Getting data with model", model: built.model });
+
         // Train the model using the tensor data
         // Repeat multiple epochs so the error rate is smaller (better fit for the data)
         this.cnn(built.model, tensorData, epochs).then((model) => {
-
-          this.setState({ model });
-
           // Predict for the same train data
           // We gonna show the both (original, predicted) sets on the graph 
           // so we can see how well our model fits the data
