@@ -210,8 +210,9 @@ class CovidPredictions extends Component {
 
       try {
         modelBuilt = this.addLayers(model);
-      }
-      finally {
+      } catch(error) {
+        this.setState({ error, isLoading: false });
+      } finally {
         built = { model: modelBuilt ?? model, data: result };
       }
 

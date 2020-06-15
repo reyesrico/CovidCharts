@@ -212,11 +212,11 @@ class App extends Component<any, any> {
             {countryHasCity && <div className="covid__text">{citySelected?.label}</div>}
           </div>
           <hr />
+          <h3 className="covid__chart-text">Projections Holt-Winter</h3>
+          {country.length && <ProjectionsHW data={this.getData(country, false, false)} type="Confirmed" width={width} />}
+          <hr />
           <h3 className="covid__chart-text">Covid Preditions (based on StockPredictions)</h3>
           {country.length && <CovidPredictions data={this.getData(country, false, false)} width={width} />}
-          <hr />
-          <h3 className="covid__chart-text">Confirmed Type Projections Holt-Winter</h3>
-          {country.length && <ProjectionsHW data={this.getData(country, false, false)} type="Confirmed" width={width} />}
           <hr />
           {/* <h3 className="covid__chart-text">Confirmed Type Projections</h3>
           {country.length && <Projections data={this.getData(country, false, false)} type="Confirmed" width={width} />} */}
