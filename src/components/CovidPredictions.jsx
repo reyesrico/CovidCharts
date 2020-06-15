@@ -51,6 +51,54 @@ class CovidPredictions extends Component {
     }
   }
 
+  buildCnn2() {
+    let model = null;
+    model = tf.sequential();
+
+    model.add(tf.layers.inputLayer({
+      inputShape: [7, 1],
+    }));
+
+    model.add(tf.layers.conv1d({
+      kernelSize: 2,
+      filters: 128,
+      strides: 1,
+      useBias: true,
+      activation: 'relu',
+      kernelInitializer: 'VarianceScaling'
+    }));
+
+    model.add(tf.layers.averagePooling1d({
+      poolSize: [2],
+      strides: [1]
+    }));
+
+    model.add(tf.layers.conv1d({
+      kernelSize: 2,
+      filters: 64,
+      strides: 1,
+      useBias: true,
+      activation: 'relu',
+      kernelInitializer: 'VarianceScaling'
+    }));
+
+    model.add(tf.layers.averagePooling1d({
+      poolSize: [2],
+      strides: [1]
+    }));
+
+    model.add(tf.layers.flatten({}));
+
+    // Add Dense layer, 
+    model.add(tf.layers.dense({
+      units: 1,
+      kernelInitializer: 'VarianceScaling',
+      activation: 'linear'
+    }));
+    
+    return model;
+  }
+
   buildCnn(data) {
     return new Promise((resolve, reject) => {
       // Linear (sequential) stack of layers
@@ -157,8 +205,13 @@ class CovidPredictions extends Component {
 
       this.setState({ message: "Getting model" });
 
+      let built = {
+        model: this.buildCnn2(),
+        data: result
+      };
+
       // Build the Convolutional Tensorflow model
-      this.buildCnn(result).then(built => {
+      // this.buildCnn(result).then(built => {
 
         // Transform the data to tensor data
         // Reshape the data in neural network input format [number_of_samples, timePortion, 1];
@@ -224,7 +277,7 @@ class CovidPredictions extends Component {
             });
           });
         }, (error) => this.setState({ error, isLoading: false }));
-      }, (error) => this.setState({ error, isLoading: false }));
+      // }, (error) => this.setState({ error, isLoading: false }));
     });
   }
 
