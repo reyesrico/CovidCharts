@@ -55,67 +55,68 @@ class CovidPredictions extends Component<CovidPredictionsProps, any> {
   buildCnn = (data: any) => {
     return new Promise((resolve, reject) => {
       // Linear (sequential) stack of layers
-      let model = tf.sequential();
+      let model = null;
 
-      // Define input layer
-      model.add(tf.layers.inputLayer({
-        inputShape: [7, 1],
-      }));
+      try {
+        // Linear (sequential) stack of layers
+        model = tf.sequential();
 
-      let layer = tf.layers.conv1d({
-        kernelSize: 2,
-        filters: 128,
-        strides: 1,
-        useBias: true,
-        activation: 'relu',
-        kernelInitializer: 'VarianceScaling'
-      });
+        // Define input layer
+        model.add(tf.layers.inputLayer({
+          inputShape: [7, 1],
+        }));
 
-      // Add the first convolutional layer
-      model.add(layer);
+        // Add the first convolutional layer
+        model.add(tf.layers.conv1d({
+          kernelSize: 2,
+          filters: 128,
+          strides: 1,
+          useBias: true,
+          activation: 'relu',
+          kernelInitializer: 'VarianceScaling'
+        }));
 
-      // Add the Average Pooling layer
-      model.add(tf.layers.averagePooling1d({
-        poolSize: [2],
-        strides: [1]
-      }));
+        // Add the Average Pooling layer
+        model.add(tf.layers.averagePooling1d({
+          poolSize: [2],
+          strides: [1]
+        }));
 
-      // Add the second convolutional layer
-      model.add(tf.layers.conv1d({
-        kernelSize: 2,
-        filters: 64,
-        strides: 1,
-        useBias: true,
-        activation: 'relu',
-        kernelInitializer: 'VarianceScaling'
-      }));
+        // Add the second convolutional layer
+        model.add(tf.layers.conv1d({
+          kernelSize: 2,
+          filters: 64,
+          strides: 1,
+          useBias: true,
+          activation: 'relu',
+          kernelInitializer: 'VarianceScaling'
+        }));
 
-      // Add the Average Pooling layer
-      model.add(tf.layers.averagePooling1d({
-        poolSize: [2],
-        strides: [1]
-      }));
+        // Add the Average Pooling layer
+        model.add(tf.layers.averagePooling1d({
+          poolSize: [2],
+          strides: [1]
+        }));
 
-      // Add Flatten layer, reshape input to (number of samples, number of features)
-      model.add(tf.layers.flatten({
+        // Add Flatten layer, reshape input to (number of samples, number of features)
+        model.add(tf.layers.flatten({
 
-      }));
+        }));
 
-      // Add Dense layer, 
-      model.add(tf.layers.dense({
-        units: 1,
-        kernelInitializer: 'VarianceScaling',
-        activation: 'linear'
-      }));
+        // Add Dense layer, 
+        model.add(tf.layers.dense({
+          units: 1,
+          kernelInitializer: 'VarianceScaling',
+          activation: 'linear'
+        }));
 
-      if (model) {
         return resolve({
           'model': model,
           'data': data
         });  
-      } else {
-        return reject(`Model not created`);
-      }
+      } catch(error) {
+        return reject(`Model not created: ${error}`);
+      } 
     });
   }
 
