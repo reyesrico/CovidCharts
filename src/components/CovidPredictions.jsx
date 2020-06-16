@@ -51,55 +51,6 @@ class CovidPredictions extends Component {
     }
   }
 
-  addLayers(model) {
-    try {
-      model.add(tf.layers.inputLayer({
-        inputShape: [7, 1],
-      }));
-  
-      model.add(tf.layers.conv1d({
-        kernelSize: 2,
-        filters: 128,
-        strides: 1,
-        useBias: true,
-        activation: 'relu',
-        kernelInitializer: 'VarianceScaling'
-      }));
-  
-      model.add(tf.layers.averagePooling1d({
-        poolSize: [2],
-        strides: [1]
-      }));
-  
-      model.add(tf.layers.conv1d({
-        kernelSize: 2,
-        filters: 64,
-        strides: 1,
-        useBias: true,
-        activation: 'relu',
-        kernelInitializer: 'VarianceScaling'
-      }));
-  
-      model.add(tf.layers.averagePooling1d({
-        poolSize: [2],
-        strides: [1]
-      }));
-  
-      model.add(tf.layers.flatten({}));
-  
-      // Add Dense layer, 
-      model.add(tf.layers.dense({
-        units: 1,
-        kernelInitializer: 'VarianceScaling',
-        activation: 'linear'
-      }));
-
-      return model;
-    } catch(error) {
-      this.setState({ error, isLoading: false });
-    }
-  }
-
   buildCnn(data) {
     return new Promise((resolve, reject) => {
       // Linear (sequential) stack of layers
@@ -206,81 +157,73 @@ class CovidPredictions extends Component {
 
       this.setState({ message: "Getting model" });
 
-
       // Build the Convolutional Tensorflow model
-      let model = tf.sequential();
-      let modelBuilt = null;
-      let built = null;
+      this.buildCnn(result).then(built => {
 
-      modelBuilt = this.addLayers(model);
+        // Transform the data to tensor data
+        // Reshape the data in neural network input format [number_of_samples, timePortion, 1];
+        let tensorData = {
+          tensorTrainX: tf.tensor1d(built.data.trainX).reshape([built.data.size, built.data.timePortion, 1]),
+          tensorTrainY: tf.tensor1d(built.data.trainY)
+        };
 
-      if (this.state.error) return;
+        // Rember the min and max in order to revert (min-max scaler) the scaled data later 
+        let max = built.data.max;
+        let min = built.data.min;
 
-      built = { model: modelBuilt ?? model, data: result };
+        this.setState({ message: "Getting data with model", model: built.model });
 
-      // Transform the data to tensor data
-      // Reshape the data in neural network input format [number_of_samples, timePortion, 1];
-      let tensorData = {
-        tensorTrainX: tf.tensor1d(built.data.trainX).reshape([built.data.size, built.data.timePortion, 1]),
-        tensorTrainY: tf.tensor1d(built.data.trainY)
-      };
+        // Train the model using the tensor data
+        // Repeat multiple epochs so the error rate is smaller (better fit for the data)
+        this.cnn(built.model, tensorData, epochs).then((model) => {
+          // Predict for the same train data
+          // We gonna show the both (original, predicted) sets on the graph 
+          // so we can see how well our model fits the data
+          var predictedX = model.predict(tensorData.tensorTrainX);
 
-      // Rember the min and max in order to revert (min-max scaler) the scaled data later 
-      let max = built.data.max;
-      let min = built.data.min;
+          // Scale the next day features
+          let nextDayPredictionScaled = minMaxScaler(nextDayPrediction, min, max);
+          // Transform to tensor data
+          let tensorNextDayPrediction = tf.tensor1d(nextDayPredictionScaled.data).reshape([1, built.data.timePortion, 1]);
 
-      this.setState({ message: "Getting data with model", model: built.model });
+          // Predict the next day stock price
+          let predictedValue = model.predict(tensorNextDayPrediction);
 
-      // Train the model using the tensor data
-      // Repeat multiple epochs so the error rate is smaller (better fit for the data)
-      this.cnn(built.model, tensorData, epochs).then((model) => {
-        // Predict for the same train data
-        // We gonna show the both (original, predicted) sets on the graph 
-        // so we can see how well our model fits the data
-        var predictedX = model.predict(tensorData.tensorTrainX);
+          this.setState({ message: "Getting predictedValue data" });
+          // Get the predicted data for the train set
+          predictedValue.data().then((predValue) => {
 
-        // Scale the next day features
-        let nextDayPredictionScaled = minMaxScaler(nextDayPrediction, min, max);
-        // Transform to tensor data
-        let tensorNextDayPrediction = tf.tensor1d(nextDayPredictionScaled.data).reshape([1, built.data.timePortion, 1]);
+            // Revert the scaled features, so we get the real values
+            let inversePredictedValue = minMaxInverseScaler(predValue, min, max);
 
-        // Predict the next day stock price
-        let predictedValue = model.predict(tensorNextDayPrediction);
+            this.setState({ message: "Finishing and cleaning data "});
+            // Get the next day predicted value
+            predictedX.data().then((pred) => {
+              // Revert the scaled feature
+              var predictedXInverse = minMaxInverseScaler(pred, min, max);
 
-        this.setState({ message: "Getting predictedValue data" });
-        // Get the predicted data for the train set
-        predictedValue.data().then((predValue) => {
+              // Convert Float32Array to regular Array, so we can add additional value
+              predictedXInverse.data = Array.prototype.slice.call(predictedXInverse.data);
+              // Add the next day predicted stock price so it's showed on the graph
+              predictedXInverse.data = [
+                ...predictedXInverse.data,
+                ...inversePredictedValue.data];  // EL ULTIMO
+              // predictedXInverse.data[predictedXInverse.data.length] = inversePredictedValue.data[0];
 
-          // Revert the scaled features, so we get the real values
-          let inversePredictedValue = minMaxInverseScaler(predValue, min, max);
+              // Revert the scaled labels from the trainY (original), 
+              // so we can compare them with the predicted one
+              // var trainYInverse = minMaxInverseScaler(built.data.trainY, min, max);
 
-          this.setState({ message: "Finishing and cleaning data "});
-          // Get the next day predicted value
-          predictedX.data().then((pred) => {
-            // Revert the scaled feature
-            var predictedXInverse = minMaxInverseScaler(pred, min, max);
+              // Plot the original (trainY) and predicted values for the same features set (trainX)
+              // plotData(trainYInverse.data, predictedXInverse.data, labels);
+              // console.log(trainYInverse.data);   // 123   vs 130 total
+              // console.log(predictedXInverse.data);  // 124   (123 + 1)
+              // console.log(labels);  // 130 ?
 
-            // Convert Float32Array to regular Array, so we can add additional value
-            predictedXInverse.data = Array.prototype.slice.call(predictedXInverse.data);
-            // Add the next day predicted stock price so it's showed on the graph
-            predictedXInverse.data = [
-              ...predictedXInverse.data,
-              ...inversePredictedValue.data];  // EL ULTIMO
-            // predictedXInverse.data[predictedXInverse.data.length] = inversePredictedValue.data[0];
-
-            // Revert the scaled labels from the trainY (original), 
-            // so we can compare them with the predicted one
-            // var trainYInverse = minMaxInverseScaler(built.data.trainY, min, max);
-
-            // Plot the original (trainY) and predicted values for the same features set (trainX)
-            // plotData(trainYInverse.data, predictedXInverse.data, labels);
-            // console.log(trainYInverse.data);   // 123   vs 130 total
-            // console.log(predictedXInverse.data);  // 124   (123 + 1)
-            // console.log(labels);  // 130 ?
-
-            this.setState({ predictedData: predictedXInverse.data, predictedDates: labels, isLoading: false, message: "" });
+              this.setState({ predictedData: predictedXInverse.data, predictedDates: labels, isLoading: false, message: "" });
+            });
           });
-        });
+        }, (error) => this.setState({ error, isLoading: false }));
       }, (error) => this.setState({ error, isLoading: false }));
     });
   }
