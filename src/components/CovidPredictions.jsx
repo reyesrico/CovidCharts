@@ -52,48 +52,52 @@ class CovidPredictions extends Component {
   }
 
   addLayers(model) {
-    model.add(tf.layers.inputLayer({
-      inputShape: [7, 1],
-    }));
+    try {
+      model.add(tf.layers.inputLayer({
+        inputShape: [7, 1],
+      }));
+  
+      model.add(tf.layers.conv1d({
+        kernelSize: 2,
+        filters: 128,
+        strides: 1,
+        useBias: true,
+        activation: 'relu',
+        kernelInitializer: 'VarianceScaling'
+      }));
+  
+      model.add(tf.layers.averagePooling1d({
+        poolSize: [2],
+        strides: [1]
+      }));
+  
+      model.add(tf.layers.conv1d({
+        kernelSize: 2,
+        filters: 64,
+        strides: 1,
+        useBias: true,
+        activation: 'relu',
+        kernelInitializer: 'VarianceScaling'
+      }));
+  
+      model.add(tf.layers.averagePooling1d({
+        poolSize: [2],
+        strides: [1]
+      }));
+  
+      model.add(tf.layers.flatten({}));
+  
+      // Add Dense layer, 
+      model.add(tf.layers.dense({
+        units: 1,
+        kernelInitializer: 'VarianceScaling',
+        activation: 'linear'
+      }));
 
-    model.add(tf.layers.conv1d({
-      kernelSize: 2,
-      filters: 128,
-      strides: 1,
-      useBias: true,
-      activation: 'relu',
-      kernelInitializer: 'VarianceScaling'
-    }));
-
-    model.add(tf.layers.averagePooling1d({
-      poolSize: [2],
-      strides: [1]
-    }));
-
-    model.add(tf.layers.conv1d({
-      kernelSize: 2,
-      filters: 64,
-      strides: 1,
-      useBias: true,
-      activation: 'relu',
-      kernelInitializer: 'VarianceScaling'
-    }));
-
-    model.add(tf.layers.averagePooling1d({
-      poolSize: [2],
-      strides: [1]
-    }));
-
-    model.add(tf.layers.flatten({}));
-
-    // Add Dense layer, 
-    model.add(tf.layers.dense({
-      units: 1,
-      kernelInitializer: 'VarianceScaling',
-      activation: 'linear'
-    }));
-    
-    return model;
+      return model;
+    } catch(error) {
+      this.setState({ error, isLoading: false });
+    }
   }
 
   buildCnn(data) {
@@ -208,13 +212,11 @@ class CovidPredictions extends Component {
       let modelBuilt = null;
       let built = null;
 
-      try {
-        modelBuilt = this.addLayers(model);
-      } catch(error) {
-        this.setState({ error, isLoading: false });
-      } finally {
-        built = { model: modelBuilt ?? model, data: result };
-      }
+      modelBuilt = this.addLayers(model);
+
+      if (this.state.error) return;
+
+      built = { model: modelBuilt ?? model, data: result };
 
       // Transform the data to tensor data
       // Reshape the data in neural network input format [number_of_samples, timePortion, 1];
