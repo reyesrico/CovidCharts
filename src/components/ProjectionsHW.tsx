@@ -35,7 +35,9 @@ class ProjectionsHW extends Component<ProjectionsProps, any> {
       this.setState({
         isLoading: false,
         predictions: [],
-        period: 7
+        period: 7,
+        maxRange: 2,
+        ySlc: 'Confirmed',    
       });
 
       this.getPredictions();

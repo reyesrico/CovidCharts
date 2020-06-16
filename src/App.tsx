@@ -181,6 +181,7 @@ class App extends Component<any, any> {
 
     let countryHasProvince = hasProvince(country);
     let countryHasCity = hasCity(country);
+    let data = this.getData(country, false, false);
 
     return (
       <div className="covid">
@@ -213,10 +214,10 @@ class App extends Component<any, any> {
           </div>
           <hr />
           <h3 className="covid__chart-text">Projections Holt-Winter</h3>
-          {country.length && <ProjectionsHW data={this.getData(country, false, false)} type="Confirmed" width={width} />}
+          {data.length && <ProjectionsHW data={data} type="Confirmed" width={width} />}
           <hr />
           <h3 className="covid__chart-text">Covid Preditions (based on StockPredictions)</h3>
-          {country.length && <CovidPredictions data={this.getData(country, false, false)} width={width} />}
+          {data.length && <CovidPredictions data={data} width={width} />}
           <hr />
           {/* <h3 className="covid__chart-text">Confirmed Type Projections</h3>
           {country.length && <Projections data={this.getData(country, false, false)} type="Confirmed" width={width} />} */}
