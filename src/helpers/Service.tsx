@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 const headers = {
     'cache-control': 'no-cache',
     'x-apikey': '5c932ad1cac6621685acc11e'
@@ -12,18 +10,27 @@ const api = {
   country: (country: string) => `https://api.covid19api.com/dayone/country/${country}`,  
 };
 
+const fetchWithHeaders = async (url: string) => {
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const data = await response.json();
+  return { data };
+};
+
 export const getDefault = () => (
-  axios.get(api.default(), { headers })
+  fetchWithHeaders(api.default())
 );
 
 export const getAll = () => (
-  axios.get(api.all(), { headers })
+  fetchWithHeaders(api.all())
 );
 
 export const getCountry = (country: string) => (
-  axios.get(api.country(country), { headers })
+  fetchWithHeaders(api.country(country))
 );
 
 export const getCountries = () => (
-  axios.get(api.countries(), { headers })
+  fetchWithHeaders(api.countries())
 );
