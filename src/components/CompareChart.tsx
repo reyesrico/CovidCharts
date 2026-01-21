@@ -5,8 +5,9 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import ChartOptions from './ChartOptions';
 import CompareChartProps from '../types/CompareChartProps';
 import CountryDataRow from '../types/CountryDataRow';
-import { getCountry } from '../helpers/Service';
+import { getCountryByDateRange } from '../helpers/Service';
 import { updateDates } from '../helpers/CovidHelper';
+import { getDateWeekAgo, formatDate } from '../helpers/DateHelper';
 
 import './CompareChart.scss';
 
@@ -42,7 +43,13 @@ class CompareChart extends Component<CompareChartProps, any> {
     if (!hasProvinces) {
       this.setState({ isLoading: true });
 
-      getCountry(countryCompare.value)
+      // Fetch last week of data for comparison
+      const weekEndDate = new Date();
+      const weekStartDate = getDateWeekAgo(weekEndDate);
+      const dateFrom = formatDate(weekStartDate);
+      const dateTo = formatDate(weekEndDate);
+
+      getCountryByDateRange(countryCompare.value, dateFrom, dateTo)
       .then(res => this.setState({ countryData: res.data }))
       .finally(() => this.setState({ isLoading: false }));
     }
