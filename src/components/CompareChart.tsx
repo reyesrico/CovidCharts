@@ -7,20 +7,9 @@ import CompareChartProps from '../types/CompareChartProps';
 import CountryDataRow from '../types/CountryDataRow';
 import { getCountryByDateRange } from '../helpers/Service';
 import { updateDates } from '../helpers/CovidHelper';
+import { getDateWeekAgo, formatDate } from '../helpers/DateHelper';
 
 import './CompareChart.scss';
-
-// Helper function to get date 7 days ago
-const getDateWeekAgo = (date: Date) => {
-  const newDate = new Date(date);
-  newDate.setDate(newDate.getDate() - 7);
-  return newDate;
-};
-
-// Helper function to format date as YYYY-MM-DD
-const formatDate = (date: Date) => {
-  return date.toISOString().split('T')[0];
-};
 
 class CompareChart extends Component<CompareChartProps, any> {
   state = {

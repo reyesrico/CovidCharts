@@ -14,20 +14,9 @@ import MakeChart from './components/MakeChart';
 import ProjectionsHW from './components/ProjectionsHW';
 import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
 import { getCountries, getCountryByDateRange } from './helpers/Service';
+import { getDateWeekAgo, formatDate } from './helpers/DateHelper';
 
 import './App.scss';
-
-// Helper function to get date 7 days ago
-const getDateWeekAgo = (date: Date) => {
-  const newDate = new Date(date);
-  newDate.setDate(newDate.getDate() - 7);
-  return newDate;
-};
-
-// Helper function to format date as YYYY-MM-DD
-const formatDate = (date: Date) => {
-  return date.toISOString().split('T')[0];
-};
 
 class App extends Component<any, any> {
   state = {

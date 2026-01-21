@@ -22,19 +22,25 @@ const fetchData = async (url: string) => {
 
 // Map covid-api.com response to CountryDataRow format
 const mapReportToCountryDataRow = (report: any): CountryDataRow => {
+  const confirmed = report.confirmed || 0;
+  const deaths = report.deaths || 0;
+  const recovered = report.recovered || 0;
+  // Prevent negative active cases
+  const active = Math.max(0, confirmed - deaths - recovered);
+  
   return {
-    Active: report.confirmed - report.deaths - report.recovered,
+    Active: active,
     City: report.region?.city || '',
     CityCode: '',
-    Confirmed: report.confirmed || 0,
+    Confirmed: confirmed,
     Country: report.region?.name || '',
     CountryCode: report.region?.iso || '',
     Date: report.date,
-    Deaths: report.deaths || 0,
+    Deaths: deaths,
     Lat: report.region?.lat || '0',
     Lon: report.region?.long || '0',
     Province: report.region?.province || '',
-    Recovered: report.recovered || 0
+    Recovered: recovered
   };
 };
 
@@ -79,23 +85,30 @@ export const getCountryByDateRange = async (countryIso: string, dateFrom: string
   const startDate = new Date(dateFrom);
   const endDate = new Date(dateTo);
   
-  // Fetch data for each day in the range
+  // Build array of dates to fetch
+  const datesToFetch: string[] = [];
   const currentDate = new Date(startDate);
   while (currentDate <= endDate) {
-    const dateStr = currentDate.toISOString().split('T')[0];
-    const params = `?iso=${countryIso.toUpperCase()}&date=${dateStr}`;
-    
-    try {
-      const response = await fetchData(api.reports(params));
-      const reports = response.data || [];
-      const mappedReports = reports.map(mapReportToCountryDataRow);
-      allReports.push(...mappedReports);
-    } catch (error) {
-      console.error(`Error fetching data for ${dateStr}:`, error);
-    }
-    
+    datesToFetch.push(currentDate.toISOString().split('T')[0]);
     currentDate.setDate(currentDate.getDate() + 1);
   }
+  
+  // Fetch all dates in parallel for better performance
+  const promises = datesToFetch.map(dateStr => {
+    const params = `?iso=${countryIso.toUpperCase()}&date=${dateStr}`;
+    return fetchData(api.reports(params))
+      .then(response => {
+        const reports = response.data || [];
+        return reports.map(mapReportToCountryDataRow);
+      })
+      .catch(error => {
+        console.error(`Error fetching data for ${dateStr}:`, error);
+        return [];
+      });
+  });
+  
+  const results = await Promise.all(promises);
+  results.forEach(reports => allReports.push(...reports));
   
   return { data: allReports };
 };
