@@ -5,10 +5,22 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import ChartOptions from './ChartOptions';
 import CompareChartProps from '../types/CompareChartProps';
 import CountryDataRow from '../types/CountryDataRow';
-import { getCountry } from '../helpers/Service';
+import { getCountryByDateRange } from '../helpers/Service';
 import { updateDates } from '../helpers/CovidHelper';
 
 import './CompareChart.scss';
+
+// Helper function to get date 7 days ago
+const getDateWeekAgo = (date: Date) => {
+  const newDate = new Date(date);
+  newDate.setDate(newDate.getDate() - 7);
+  return newDate;
+};
+
+// Helper function to format date as YYYY-MM-DD
+const formatDate = (date: Date) => {
+  return date.toISOString().split('T')[0];
+};
 
 class CompareChart extends Component<CompareChartProps, any> {
   state = {
@@ -42,7 +54,13 @@ class CompareChart extends Component<CompareChartProps, any> {
     if (!hasProvinces) {
       this.setState({ isLoading: true });
 
-      getCountry(countryCompare.value)
+      // Fetch last week of data for comparison
+      const weekEndDate = new Date();
+      const weekStartDate = getDateWeekAgo(weekEndDate);
+      const dateFrom = formatDate(weekStartDate);
+      const dateTo = formatDate(weekEndDate);
+
+      getCountryByDateRange(countryCompare.value, dateFrom, dateTo)
       .then(res => this.setState({ countryData: res.data }))
       .finally(() => this.setState({ isLoading: false }));
     }

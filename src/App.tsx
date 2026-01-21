@@ -13,9 +13,21 @@ import MakeChart from './components/MakeChart';
 // import Projections from './components/Projections';
 import ProjectionsHW from './components/ProjectionsHW';
 import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
-import { getCountry, getCountries } from './helpers/Service';
+import { getCountry, getCountries, getCountryByDateRange } from './helpers/Service';
 
 import './App.scss';
+
+// Helper function to get date 7 days ago
+const getDateWeekAgo = (date: Date) => {
+  const newDate = new Date(date);
+  newDate.setDate(newDate.getDate() - 7);
+  return newDate;
+};
+
+// Helper function to format date as YYYY-MM-DD
+const formatDate = (date: Date) => {
+  return date.toISOString().split('T')[0];
+};
 
 class App extends Component<any, any> {
   state = {
@@ -35,7 +47,11 @@ class App extends Component<any, any> {
     citySelected: { name: null, value: '', label: null },
     usMap: {},
     isError: false,
-    width: 500
+    width: 500,
+    // New state for week navigation
+    weekEndDate: new Date(),
+    weekStartDate: getDateWeekAgo(new Date()),
+    isAtLatestWeek: true
   }
 
   componentDidMount() {
@@ -75,11 +91,14 @@ class App extends Component<any, any> {
   }
 
   getCountryInfo = () => {
-    const { countrySelected } = this.state;
+    const { countrySelected, weekStartDate, weekEndDate } = this.state;
 
     this.setState({ isLoading: true, isError: false });
 
-    getCountry(countrySelected.value)
+    const dateFrom = formatDate(weekStartDate);
+    const dateTo = formatDate(weekEndDate);
+
+    getCountryByDateRange(countrySelected.value, dateFrom, dateTo)
       .then(res => {
         const country = res.data;
         let usMap, provinces, provinceSelected, cities, citySelected;
@@ -109,6 +128,44 @@ class App extends Component<any, any> {
       })
       .catch(() => this.setState({ isError: true }))
       .finally(() => this.setState({ isLoading: false }));
+  }
+
+  handlePreviousWeek = () => {
+    const { weekStartDate, weekEndDate } = this.state;
+    const newEndDate = new Date(weekStartDate);
+    newEndDate.setDate(newEndDate.getDate() - 1);
+    const newStartDate = getDateWeekAgo(newEndDate);
+    
+    this.setState({ 
+      weekStartDate: newStartDate, 
+      weekEndDate: newEndDate,
+      isAtLatestWeek: false 
+    }, () => {
+      this.getCountryInfo();
+    });
+  }
+
+  handleNextWeek = () => {
+    const { weekStartDate, weekEndDate } = this.state;
+    const newStartDate = new Date(weekEndDate);
+    newStartDate.setDate(newStartDate.getDate() + 1);
+    const newEndDate = new Date(newStartDate);
+    newEndDate.setDate(newEndDate.getDate() + 6);
+    
+    const today = new Date();
+    const isAtLatest = newEndDate >= today;
+    
+    if (isAtLatest) {
+      newEndDate.setTime(today.getTime());
+    }
+    
+    this.setState({ 
+      weekStartDate: newStartDate, 
+      weekEndDate: newEndDate,
+      isAtLatestWeek: isAtLatest 
+    }, () => {
+      this.getCountryInfo();
+    });
   }
 
   getData = (country: CountryDataRow[], managed: boolean = false, changeDates: boolean = true) => {
@@ -172,6 +229,34 @@ class App extends Component<any, any> {
     return citySelected?.label ?? provinceSelected?.label  ?? countrySelected.label;
   }
 
+  renderWeekNavigation = () => {
+    const { weekStartDate, weekEndDate, isAtLatestWeek, isLoading } = this.state;
+    const startStr = weekStartDate.toLocaleDateString();
+    const endStr = weekEndDate.toLocaleDateString();
+    
+    return (
+      <div className="covid__week-navigation">
+        <button 
+          className="covid__week-button"
+          onClick={this.handlePreviousWeek}
+          disabled={isLoading}
+        >
+          ← Previous Week
+        </button>
+        <span className="covid__week-range">
+          {startStr} - {endStr}
+        </span>
+        <button 
+          className="covid__week-button"
+          onClick={this.handleNextWeek}
+          disabled={isLoading || isAtLatestWeek}
+        >
+          Next Week →
+        </button>
+      </div>
+    );
+  }
+
   render() {
     const { country, countries, countrySelected, isLoading, provinces,
       provinceSelected, cities, citySelected, usMap, width, isError } = this.state;
@@ -186,7 +271,7 @@ class App extends Component<any, any> {
     return (
       <div className="covid">
         <h2 className="covid__title">COVID {countrySelected.label} Charts</h2>
-        <h3 className="covid__subtitle">Data Source: <a href="https://github.com/CSSEGISandData/COVID-19">Johns Hopkins CSSE</a></h3>
+        <h3 className="covid__subtitle">Data Source: <a href="https://covid-api.com" target="_blank" rel="noopener noreferrer">COVID-19 API</a> (Johns Hopkins CSSE)</h3>
         <Instructions countrySelected={countrySelected} />
         {isError && <div className="covid__error">Error Getting Data: Try Again</div>}
         <div className="covid__dropdowns">
@@ -194,6 +279,7 @@ class App extends Component<any, any> {
           {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}
           {countryHasCity && <Select onChange={(citySelected: any) => this.setState({ citySelected })} options={cities} value={citySelected} />}
         </div>
+        {this.renderWeekNavigation()}
         <hr />
         <div className="covid__charts">
           <h3 className="covid__chart-text">Total Confirmed and Deaths</h3>
