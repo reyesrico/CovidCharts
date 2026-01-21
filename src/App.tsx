@@ -13,7 +13,7 @@ import MakeChart from './components/MakeChart';
 // import Projections from './components/Projections';
 import ProjectionsHW from './components/ProjectionsHW';
 import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
-import { getCountry, getCountries, getCountryByDateRange } from './helpers/Service';
+import { getCountries, getCountryByDateRange } from './helpers/Service';
 
 import './App.scss';
 
@@ -131,7 +131,7 @@ class App extends Component<any, any> {
   }
 
   handlePreviousWeek = () => {
-    const { weekStartDate, weekEndDate } = this.state;
+    const { weekStartDate } = this.state;
     const newEndDate = new Date(weekStartDate);
     newEndDate.setDate(newEndDate.getDate() - 1);
     const newStartDate = getDateWeekAgo(newEndDate);
@@ -146,7 +146,7 @@ class App extends Component<any, any> {
   }
 
   handleNextWeek = () => {
-    const { weekStartDate, weekEndDate } = this.state;
+    const { weekEndDate } = this.state;
     const newStartDate = new Date(weekEndDate);
     newStartDate.setDate(newStartDate.getDate() + 1);
     const newEndDate = new Date(newStartDate);
