@@ -71,6 +71,9 @@
     },
     "request": {
       "form-data": ">=2.5.4"
+    },
+    "resolve-url-loader": {
+      "postcss": "^8.4.31"
     }
   }
 }
