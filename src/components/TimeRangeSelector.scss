@@ -1,0 +1,38 @@
+.time-range-selector {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0;
+
+  &__btn {
+    padding: 5px 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+    &:hover:not(:disabled) {
+      border-color: #82ca9d;
+      color: #333;
+    }
+
+    &--active {
+      background: #82ca9d;
+      border-color: #82ca9d;
+      color: #fff;
+
+      &:hover:not(:disabled) {
+        background: #6ab88a;
+        border-color: #6ab88a;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
