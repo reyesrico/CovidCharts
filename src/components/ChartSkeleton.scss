@@ -1,0 +1,36 @@
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position:  800px 0; }
+}
+
+.chart-skeleton {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #e8ecf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-skeleton__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #e8ecf0 0%,
+    #f4f6f8 40%,
+    #e8ecf0 80%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.chart-skeleton__message {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}

@@ -10,6 +10,8 @@ import Footer from './components/Footer';
 import Instructions from './components/Instructions';
 import Loading from './components/Loading';
 import MakeChart from './components/MakeChart';
+import StatsCards from './components/StatsCards';
+import ChartSkeleton from './components/ChartSkeleton';
 // import Projections from './components/Projections';
 import ProjectionsHW from './components/ProjectionsHW';
 import { hasProvince, hasCity, createMap, getUniqueCities, getCityData, manageCountryData, getProvinces, updateDates } from './helpers/CovidHelper';
@@ -183,58 +185,71 @@ class App extends Component<any, any> {
 
   render() {
     const { country, countries, countrySelected, isLoading, provinces,
-      provinceSelected, cities, citySelected, usMap, isError } = this.state;
+      provinceSelected, cities, citySelected, usMap, isError, timeRange } = this.state;
 
-    let countryText = countrySelected.label ?? 'Country';
-    if (!countries.length || isLoading) return (<Loading size="xl" message={`Loading ${countryText} Data`} />);
+    // Full-page spinner only on initial data load (no countries yet)
+    if (!countries.length) return (<Loading size="xl" message="Loading Countries..." />);
 
     let countryHasProvince = hasProvince(country);
     let countryHasCity = hasCity(country);
     let data = this.getData(country, false, false);
+    const countryText = countrySelected.label ?? 'Country';
 
     return (
       <div className="covid">
-        <h2 className="covid__title">COVID {countrySelected.label} Charts</h2>
-        <h3 className="covid__subtitle">Data Source: <a href="https://covid-api.com" target="_blank" rel="noopener noreferrer">COVID-19 API</a> (Johns Hopkins CSSE)</h3>
-        <Instructions countrySelected={countrySelected} />
-        {isError && <div className="covid__error">Error Getting Data: Try Again</div>}
-        <div className="covid__dropdowns">
-          <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
-          {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}
-          {countryHasCity && <Select onChange={(citySelected: any) => this.setState({ citySelected })} options={cities} value={citySelected} />}
-        </div>
-        <TimeRangeSelector
-          value={this.state.timeRange}
-          onChange={(timeRange) => this.setState({ timeRange })}
-          disabled={isLoading}
-        />
-        <hr />
-        <div className="covid__charts">
-          <h3 className="covid__chart-text">Total Confirmed and Deaths</h3>
-          {this.renderChart(country)}
-          <hr />
-          <h3 className="covid__chart-text">Incremental Confirmed (To Date - One Day Before) and Deaths</h3>
-          {this.renderChart(country, true)}
-          <hr />
-          {!countryHasProvince && this.renderCompareChart(countryHasProvince)}
-          <hr />
-          <h3 className="covid__chart-text">Make Your Own {this.renderTitle()} Chart</h3>
-          <MakeChart countries={countries} data={this.getData(country, false, false)} map={usMap} />
-          <hr />
-          <div className="covid__texts">
-            <div className="covid__text">{countrySelected.label}</div>
-            {countryHasProvince && <div className="covid__text">{provinceSelected?.label}</div>}
-            {countryHasCity && <div className="covid__text">{citySelected?.label}</div>}
+        <header className="covid__header">
+          <div className="covid__header-title">
+            <h1 className="covid__title">CovidCharts</h1>
+            <span className="covid__disclaimer">Data: Johns Hopkins CSSE via <a href="https://covid-api.com" target="_blank" rel="noopener noreferrer">covid-api.com</a> &mdash; through Mar 2023</span>
           </div>
-          <hr />
-          <h3 className="covid__chart-text">Projections Holt-Winter</h3>
-          {data.length && <ProjectionsHW data={data} type="Confirmed" />}
-          <hr />
-          <h3 className="covid__chart-text">Covid Preditions (based on StockPredictions)</h3>
-          {data.length && <CovidPredictions data={data} />}
-          <hr />
-          {/* <h3 className="covid__chart-text">Confirmed Type Projections</h3>
-          {country.length && <Projections data={this.getData(country, false, false)} type="Confirmed" width={width} />} */}
+          <div className="covid__header-controls">
+            <div className="covid__dropdowns">
+              <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
+              {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}
+              {countryHasCity && <Select onChange={(citySelected: any) => this.setState({ citySelected })} options={cities} value={citySelected} />}
+            </div>
+            <TimeRangeSelector
+              value={timeRange}
+              onChange={(timeRange) => this.setState({ timeRange })}
+              disabled={isLoading}
+            />
+          </div>
+        </header>
+
+        <Instructions countrySelected={countrySelected} />
+
+        {isError && (
+          <div className="covid__error">
+            Error loading data for <b>{countryText}</b>.
+            <button className="covid__error-retry" onClick={() => this.getCountryInfo()}>Retry</button>
+          </div>
+        )}
+
+        {country.length > 0 && <StatsCards data={data} />}
+
+        <div className="covid__charts">
+          {isLoading ? (
+            <ChartSkeleton height={280} message={`Loading ${countryText} data…`} />
+          ) : (
+            <>
+              <h3 className="covid__chart-text">Total Confirmed and Deaths</h3>
+              {this.renderChart(country)}
+              <hr />
+              <h3 className="covid__chart-text">Incremental Confirmed and Deaths</h3>
+              {this.renderChart(country, true)}
+              <hr />
+              {!countryHasProvince && this.renderCompareChart(countryHasProvince)}
+              <hr />
+              <h3 className="covid__chart-text">Make Your Own {this.renderTitle()} Chart</h3>
+              <MakeChart countries={countries} data={this.getData(country, false, false)} map={usMap} />
+              <hr />
+              <h3 className="covid__chart-text">Projections Holt-Winter</h3>
+              {data.length && <ProjectionsHW data={data} type="Confirmed" />}
+              <hr />
+              <h3 className="covid__chart-text">Covid Predictions (based on Stock Predictions)</h3>
+              {data.length && <CovidPredictions data={data} />}
+            </>
+          )}
         </div>
         <Footer />
       </div>
