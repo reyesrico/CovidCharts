@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# internal copilot docs (local only, never push)
+.github/
+/dist

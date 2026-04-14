@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { isEmpty, isEqual } from 'lodash';
 
 import CountryDataRow from '../types/CountryDataRow';
@@ -74,17 +74,17 @@ class Projections extends Component<ProjectionsProps, any> {
     let counter = 0;
 
     data.forEach((row: CountryDataRow, index: number) => {
-      confirmed.push([moment(row.Date).valueOf(), row[type]]);
+      confirmed.push([dayjs(row.Date).valueOf(), row[type]]);
 
       if (index >= windowSize) {
         const trainedRow: SMAType = trainedData[counter++];
-        trained.push([moment(row.Date).valueOf(), Math.round(trainedRow.avg)]);
+        trained.push([dayjs(row.Date).valueOf(), Math.round(trainedRow.avg)]);
       }
     });
 
     if (showProjected) {
       predValues.forEach((value: number, index: number) => {
-        predicted.push([moment(predTimestamps[index]).valueOf(), Math.round(value)]);
+        predicted.push([dayjs(predTimestamps[index]).valueOf(), Math.round(value)]);
       });
     }
 

@@ -36,6 +36,7 @@ class App extends Component<any, any> {
     citySelected: { name: null, value: '', label: null },
     usMap: {},
     isError: false,
+    retryCount: 0,
     width: 500,
     // New state for week navigation
     weekEndDate: new Date(),
@@ -63,9 +64,9 @@ class App extends Component<any, any> {
   }
 
   componentDidUpdate(prevProps: any, prevState: any) {
-    if (this.state.isError) {
-      this.getCountryInfo();
-    } else if (!this.state.isLoading) {
+    if (this.state.isError && this.state.retryCount < 3) {
+      this.getCountryInfo(true);
+    } else if (!this.state.isLoading && !this.state.isError) {
       if (!isEqual(prevState.countrySelected, this.state.countrySelected)) {
         this.getCountryInfo();
       } else {
@@ -79,10 +80,10 @@ class App extends Component<any, any> {
     }
   }
 
-  getCountryInfo = () => {
-    const { countrySelected, weekStartDate, weekEndDate } = this.state;
+  getCountryInfo = (isRetry: boolean = false) => {
+    const { countrySelected, retryCount, weekStartDate, weekEndDate } = this.state;
 
-    this.setState({ isLoading: true, isError: false });
+    this.setState({ isLoading: true, isError: false, retryCount: isRetry ? retryCount + 1 : 0 });
 
     const dateFrom = formatDate(weekStartDate);
     const dateTo = formatDate(weekEndDate);

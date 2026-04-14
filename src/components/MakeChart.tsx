@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { isEqual, isEmpty } from 'lodash';
 
 import CountryDataRow from '../types/CountryDataRow';
@@ -108,23 +108,23 @@ class MakeChart extends Component<MakeChartProps, any> {
       let activeInc: any = [];
 
       data.forEach((row: CountryDataRow, index: number) => {
-        yValues.Confirmed && confirmed.push([moment(row.Date).valueOf(), row.Confirmed]);
-        yValues.Deaths && deaths.push([moment(row.Date).valueOf(), row.Deaths]);
-        yValues.Recovered && recovered.push([moment(row.Date).valueOf(), row.Recovered]);
-        yValues.Active && active.push([moment(row.Date).valueOf(), row.Active]);
+        yValues.Confirmed && confirmed.push([dayjs(row.Date).valueOf(), row.Confirmed]);
+        yValues.Deaths && deaths.push([dayjs(row.Date).valueOf(), row.Deaths]);
+        yValues.Recovered && recovered.push([dayjs(row.Date).valueOf(), row.Recovered]);
+        yValues.Active && active.push([dayjs(row.Date).valueOf(), row.Active]);
 
         // Incrementals
         if (index === 0) {
-          yValues.ConfirmedInc && confirmedInc.push([moment(row.Date).valueOf(), 0]);
-          yValues.DeathsInc && deathsInc.push([moment(row.Date).valueOf(), 0]);
-          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), 0]);
-          yValues.ActiveInc && activeInc.push([moment(row.Date).valueOf(), 0]);
+          yValues.ConfirmedInc && confirmedInc.push([dayjs(row.Date).valueOf(), 0]);
+          yValues.DeathsInc && deathsInc.push([dayjs(row.Date).valueOf(), 0]);
+          yValues.RecoveredInc && recoveredInc.push([dayjs(row.Date).valueOf(), 0]);
+          yValues.ActiveInc && activeInc.push([dayjs(row.Date).valueOf(), 0]);
         } else {
           let lastRow = data[index-1];
-          yValues.ConfirmedInc && confirmedInc.push([moment(row.Date).valueOf(), row.Confirmed - lastRow.Confirmed]);
-          yValues.DeathsInc && deathsInc.push([moment(row.Date).valueOf(), row.Deaths - lastRow.Deaths]);
-          yValues.RecoveredInc && recoveredInc.push([moment(row.Date).valueOf(), row.Recovered - lastRow.Recovered]);
-          yValues.ActiveInc && activeInc.push([moment(row.Date).valueOf(), row.Active - lastRow.Active]);
+          yValues.ConfirmedInc && confirmedInc.push([dayjs(row.Date).valueOf(), row.Confirmed - lastRow.Confirmed]);
+          yValues.DeathsInc && deathsInc.push([dayjs(row.Date).valueOf(), row.Deaths - lastRow.Deaths]);
+          yValues.RecoveredInc && recoveredInc.push([dayjs(row.Date).valueOf(), row.Recovered - lastRow.Recovered]);
+          yValues.ActiveInc && activeInc.push([dayjs(row.Date).valueOf(), row.Active - lastRow.Active]);
         }
       });
 

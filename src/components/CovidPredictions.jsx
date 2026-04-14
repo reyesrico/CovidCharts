@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 
 // import CountryDataRow from '../types/CountryDataRow';
@@ -255,15 +255,15 @@ class CovidPredictions extends Component {
 
     let series = [];
     // @ts-ignore
-    let current = data.map((row) => [moment(row.Date).valueOf(), row[type]]);
+    let current = data.map((row) => [dayjs(row.Date).valueOf(), row[type]]);
     let predicted = null;
     let dates = [];
 
     if (predictedData.length && predictedDates.length) {
       predicted = predictedData.map((value, index) => {
-        const momentDate = predictedDates.length > (index + timePortion) ? moment(predictedDates[index + timePortion]) : dates[dates.length-1].add(1, 'days');
-        dates.push(momentDate);  
-        return [momentDate.valueOf(), value];
+        const dayjsDate = predictedDates.length > (index + timePortion) ? dayjs(predictedDates[index + timePortion]) : dates[dates.length-1].add(1, 'day');
+        dates.push(dayjsDate);  
+        return [dayjsDate.valueOf(), value];
       });
     }
 

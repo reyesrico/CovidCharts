@@ -1,4 +1,4 @@
-import moment from 'moment';
+import dayjs from 'dayjs';
 import CountryDataRow from "../types/CountryDataRow";
 
 export const hasProvince = (country: CountryDataRow[]): boolean => {
@@ -77,6 +77,6 @@ export const getProvinces = (usMap: any) => {
 
 export const updateDates = (data: CountryDataRow[]) => {
   return data.map((row: CountryDataRow) => {
-    return { ...row, Date: moment(row.Date).format("MMM Do")};
+    return { ...row, Date: dayjs(row.Date).format("MMM D")};
   });
 }

@@ -1,15 +1,14 @@
 import React, { Component } from 'react';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import { isEqual, range } from 'lodash';
+import forecast from 'nostradamus';
 
 import CountryDataRow from '../types/CountryDataRow';
 import ProjectionsProps from '../types/ProjectionsProps';
 import options from '../helpers/charts';
 import './Projections.scss';
-
-let forecast = require('nostradamus');
 
 class ProjectionsHW extends Component<ProjectionsProps, any> {
   state = {
@@ -82,11 +81,11 @@ class ProjectionsHW extends Component<ProjectionsProps, any> {
     let dateSize = (data.length >= 2 &&
       data[0].Date &&
       data[1].Date &&
-      (moment(data[1].Date).valueOf() - moment(data[0].Date).valueOf())) || 0;
+      (dayjs(data[1].Date).valueOf() - dayjs(data[0].Date).valueOf())) || 0;
     const offset = data.length % period;
 
     // @ts-ignore
-    let typeSeries = data.map((row: CountryDataRow) => [moment(row.Date).valueOf(), row[ySlc]]);
+    let typeSeries = data.map((row: CountryDataRow) => [dayjs(row.Date).valueOf(), row[ySlc]]);
     let date = typeSeries?.[0]?.[0];
 
     let predicted = predictions.map((value: number, index: number) => {
