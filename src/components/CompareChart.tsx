@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
 import { isEqual } from 'lodash';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import ChartOptions from './ChartOptions';
 import CompareChartProps from '../types/CompareChartProps';
 import CountryDataRow from '../types/CountryDataRow';
 import { getCountryByDateRange } from '../helpers/Service';
-import { updateDates } from '../helpers/CovidHelper';
-import { getDateWeekAgo, formatDate } from '../helpers/DateHelper';
+import { getDaysAgoDate, formatDate } from '../helpers/DateHelper';
 
 import './CompareChart.scss';
 
@@ -29,25 +28,25 @@ class CompareChart extends Component<CompareChartProps, any> {
   }
 
   componentDidUpdate(prevProps: CompareChartProps, prevState: any) {
-    const { countryCompare } = this.props;
+    const { countryCompare, timeRange } = this.props;
 
-    if (!isEqual(prevProps.countryCompare, countryCompare)) {
+    if (!isEqual(prevProps.countryCompare, countryCompare) ||
+        prevProps.timeRange !== timeRange) {
       this.getCountryInfo();
     }
   }
 
   getCountryInfo = () => {
-    const { countryCompare, hasProvinces } = this.props;
+    const { countryCompare, hasProvinces, timeRange } = this.props;
     this.setState({ countryData: [] });
 
     if (!hasProvinces) {
       this.setState({ isLoading: true });
 
-      // Fetch last week of data for comparison
-      const weekEndDate = new Date();
-      const weekStartDate = getDateWeekAgo(weekEndDate);
-      const dateFrom = formatDate(weekStartDate);
-      const dateTo = formatDate(weekEndDate);
+      const dateTo = formatDate(new Date());
+      const dateFrom = timeRange === 'all'
+        ? '2020-01-22'
+        : formatDate(getDaysAgoDate(parseInt(timeRange, 10)));
 
       getCountryByDateRange(countryCompare.value, dateFrom, dateTo)
       .then(res => this.setState({ countryData: res.data }))
@@ -87,34 +86,34 @@ class CompareChart extends Component<CompareChartProps, any> {
 
 
   renderChart = () => {
-    const { width } = this.props;
     let data = this.getData();
 
-    if (!data || !data.length) return <div>Data no available</div>;
+    if (!data || !data.length) return <div>Data not available</div>;
 
-    data = updateDates(data);
     let keys = Object.keys(data[0]);
 
     return (
-      <AreaChart width={width} height={250} data={data}
-        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="color1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="color2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <XAxis dataKey="Date" />
-        <YAxis />
-        <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip />
-        <Area type="monotone" dataKey={keys[0]} stroke="#82ca9d" fillOpacity={1} fill="url(#color1)" />
-        <Area type="monotone" dataKey={keys[1]} stroke="#8884d8" fillOpacity={1} fill="url(#color2)" />
-      </AreaChart>);
+      <ResponsiveContainer width="100%" height={250}>
+        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="color1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#457B9D" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#457B9D" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="color2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#E63946" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#E63946" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="Date" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} />
+          <CartesianGrid strokeDasharray="3 3" />
+          <Tooltip />
+          <Area type="monotone" dataKey={keys[0]} stroke="#457B9D" fillOpacity={1} fill="url(#color1)" />
+          <Area type="monotone" dataKey={keys[1]} stroke="#E63946" fillOpacity={1} fill="url(#color2)" />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
   }
 
   renderOptions = () => {

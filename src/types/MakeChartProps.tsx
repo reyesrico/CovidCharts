@@ -4,5 +4,4 @@ export default interface MakeChartProps {
   data: CountryDataRow[]
   map: any,
   countries: any[],
-  width: number
 }

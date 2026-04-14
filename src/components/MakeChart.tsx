@@ -1,167 +1,142 @@
 import React, { Component } from 'react';
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
-import dayjs from 'dayjs';
-import { isEqual, isEmpty } from 'lodash';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
+import { isEqual } from 'lodash';
 
 import CountryDataRow from '../types/CountryDataRow';
 import MakeChartProps from '../types/MakeChartProps';
-import options from '../helpers/charts';
 
 import './MakeChart.scss';
 
-// Highcharts React wrapper
-// https://www.highcharts.com/blog/tutorials/highcharts-react-wrapper/
+const SERIES_COLORS: Record<string, string> = {
+  Confirmed:    '#457B9D',
+  Deaths:       '#E63946',
+  Recovered:    '#2A9D8F',
+  Active:       '#F4A261',
+  ConfirmedInc: '#457B9D',
+  DeathsInc:    '#E63946',
+  RecoveredInc: '#2A9D8F',
+  ActiveInc:    '#F4A261',
+};
 
-class MakeChart extends Component<MakeChartProps, any> {
+const SERIES_DASHES: Record<string, string | undefined> = {
+  ConfirmedInc: '5 5',
+  DeathsInc:    '5 5',
+  RecoveredInc: '5 5',
+  ActiveInc:    '5 5',
+};
+
+type YValues = {
+  Confirmed: boolean;
+  Deaths: boolean;
+  Recovered: boolean;
+  Active: boolean;
+  ConfirmedInc: boolean;
+  DeathsInc: boolean;
+  RecoveredInc: boolean;
+  ActiveInc: boolean;
+};
+
+const buildChartData = (data: CountryDataRow[]) =>
+  data.map((row, i) => {
+    const prev = i > 0 ? data[i - 1] : row;
+    return {
+      Date:         row.Date,
+      Confirmed:    row.Confirmed,
+      Deaths:       row.Deaths,
+      Recovered:    row.Recovered,
+      Active:       row.Active,
+      ConfirmedInc: Math.max(0, row.Confirmed - prev.Confirmed),
+      DeathsInc:    Math.max(0, row.Deaths    - prev.Deaths),
+      RecoveredInc: Math.max(0, row.Recovered - prev.Recovered),
+      ActiveInc:    Math.max(0, row.Active    - prev.Active),
+    };
+  });
+
+class MakeChart extends Component<MakeChartProps, { yValues: YValues }> {
   state = {
-    series: {},
     yValues: {
-      Confirmed: true,
-      Deaths: false,
-      Recovered: false,
-      Active: false,
+      Confirmed:    true,
+      Deaths:       false,
+      Recovered:    false,
+      Active:       false,
       ConfirmedInc: false,
-      DeathsInc: false,
+      DeathsInc:    false,
       RecoveredInc: false,
-      ActiveInc: false
-    }
+      ActiveInc:    false,
+    } as YValues
   }
 
-  componentDidMount() {
-    this.getData();
-  }
-
-  componentDidUpdate(prevProps: MakeChartProps, prevState: any) {
-    const { yValues } = this.state;
-    if (!isEqual(prevState.yValues, yValues)) {
-      
-      if(this.yValuesFalse()) {
-        this.clearYValues();
-      } else {
-        this.getData();
-      }
-    }
-  }
-
-  clearYValues = () => {
-    let yValues: any = {};
-
-    Object.keys(this.state.yValues).forEach(yValue => {
-      const value = yValue === 'Confirmed' ? true : false;
-      yValues = { ...yValues, [yValue]: value };
-    });
-
-    this.setState({ yValues });
-  }
-
-  yValuesFalse = () => {
-    const res = Object.values(this.state.yValues).reduce((acc: boolean, val: boolean) => {
-      return acc || val;
-    });
-
-    return !res;
-  }
-
-  changeInput(yValue: string) {
-    // @ts-ignore
-    const value: any = this.state.yValues[yValue];
-
-    const yValues: { [key: string]: boolean } = { ...this.state.yValues };
-    yValues[yValue] = !value;
-
-    this.setState({ yValues });
-  }
-
-  renderOptions = () => {
-    const { yValues } = this.state;
-   
-    return (
-      <div className="make-chart__options">
-        <div className="make-chart__values">Values (Y Axis)</div>
-        {Object.keys(yValues).map((yValue: string, index: number) => {
-          // @ts-ignore
-          const checked = yValues[yValue];
-          return (
-            <div key={index}>
-              <input checked={checked} type="checkbox" name="yaxis" value={yValue} id={yValue}
-                onChange={event => event && this.changeInput(yValue)}/>
-              {yValue}
-            </div>);
-        })}
-      </div>
-    )
-  }
-
-  getData = () => {
-    const { data } = this.props;
-    const { yValues } = this.state;
-
-    if (!this.yValuesFalse()) {
-      let confirmed: any = [];
-      let deaths: any = [];
-      let recovered: any = [];
-      let active: any = [];
-      let confirmedInc: any = [];
-      let deathsInc: any = [];
-      let recoveredInc: any = [];
-      let activeInc: any = [];
-
-      data.forEach((row: CountryDataRow, index: number) => {
-        yValues.Confirmed && confirmed.push([dayjs(row.Date).valueOf(), row.Confirmed]);
-        yValues.Deaths && deaths.push([dayjs(row.Date).valueOf(), row.Deaths]);
-        yValues.Recovered && recovered.push([dayjs(row.Date).valueOf(), row.Recovered]);
-        yValues.Active && active.push([dayjs(row.Date).valueOf(), row.Active]);
-
-        // Incrementals
-        if (index === 0) {
-          yValues.ConfirmedInc && confirmedInc.push([dayjs(row.Date).valueOf(), 0]);
-          yValues.DeathsInc && deathsInc.push([dayjs(row.Date).valueOf(), 0]);
-          yValues.RecoveredInc && recoveredInc.push([dayjs(row.Date).valueOf(), 0]);
-          yValues.ActiveInc && activeInc.push([dayjs(row.Date).valueOf(), 0]);
-        } else {
-          let lastRow = data[index-1];
-          yValues.ConfirmedInc && confirmedInc.push([dayjs(row.Date).valueOf(), row.Confirmed - lastRow.Confirmed]);
-          yValues.DeathsInc && deathsInc.push([dayjs(row.Date).valueOf(), row.Deaths - lastRow.Deaths]);
-          yValues.RecoveredInc && recoveredInc.push([dayjs(row.Date).valueOf(), row.Recovered - lastRow.Recovered]);
-          yValues.ActiveInc && activeInc.push([dayjs(row.Date).valueOf(), row.Active - lastRow.Active]);
+  componentDidUpdate(prevProps: MakeChartProps) {
+    // Reset to Confirmed when data changes
+    if (!isEqual(prevProps.data, this.props.data)) {
+      this.setState({
+        yValues: {
+          Confirmed: true, Deaths: false, Recovered: false, Active: false,
+          ConfirmedInc: false, DeathsInc: false, RecoveredInc: false, ActiveInc: false,
         }
       });
-
-      let series = [];
-      yValues.Confirmed && series.push({ type: 'area', name: 'Confirmed', data: confirmed });
-      yValues.Deaths && series.push({ type: 'area', name: 'Deaths', data: deaths });
-      yValues.Recovered && series.push({ type: 'area', name: 'Recovered', data: recovered });
-      yValues.Active && series.push({ type: 'area', name: 'Active', data: active });
-      yValues.ConfirmedInc && series.push({ type: 'area', name: 'ConfirmedInc', data: confirmedInc });
-      yValues.DeathsInc && series.push({ type: 'area', name: 'DeathsInc', data: deathsInc });
-      yValues.RecoveredInc && series.push({ type: 'area', name: 'RecoveredInc', data: recoveredInc });
-      yValues.ActiveInc && series.push({ type: 'area', name: 'ActiveInc', data: activeInc });
-
-      this.setState({ series });  
-    } 
+    }
   }
 
-  renderChart = () => {
-    const { width } = this.props;
-    const { series } = this.state;
-    const plotOptions = {
-      ...options,
-      chart: { ...options.chart, width },
-      series
-    };
+  changeInput = (key: keyof YValues) => {
+    const yValues = { ...this.state.yValues, [key]: !this.state.yValues[key] };
+    // prevent all-unchecked: revert to Confirmed
+    if (!Object.values(yValues).some(Boolean)) yValues.Confirmed = true;
+    this.setState({ yValues });
+  }
 
-    if (!isEmpty(series)) {
-      return (<HighchartsReact highcharts={Highcharts} options={plotOptions} />);
-    }
+  renderOptions() {
+    const { yValues } = this.state;
+    return (
+      <div className="make-chart__options">
+        <div className="make-chart__label">Values (Y Axis)</div>
+        {(Object.keys(yValues) as (keyof YValues)[]).map(key => (
+          <label key={key} className="make-chart__checkbox">
+            <input
+              type="checkbox"
+              checked={yValues[key]}
+              onChange={() => this.changeInput(key)}
+            />
+            {key}
+          </label>
+        ))}
+      </div>
+    );
   }
 
   render() {
+    const { data } = this.props;
+    const { yValues } = this.state;
+    const chartData = buildChartData(data);
+
     return (
       <div className="make-chart">
         {this.renderOptions()}
         <hr />
-        {this.renderChart()}
+        <ResponsiveContainer width="100%" height={320}>
+          <LineChart data={chartData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="Date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Legend />
+            {(Object.keys(yValues) as (keyof YValues)[]).map(key =>
+              yValues[key] ? (
+                <Line
+                  key={key}
+                  type="monotone"
+                  dataKey={key}
+                  stroke={SERIES_COLORS[key]}
+                  strokeDasharray={SERIES_DASHES[key]}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              ) : null
+            )}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     );
   }

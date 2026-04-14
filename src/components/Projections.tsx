@@ -1,13 +1,13 @@
 import React, { Component } from 'react';
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import dayjs from 'dayjs';
 import { isEmpty, isEqual } from 'lodash';
 
 import CountryDataRow from '../types/CountryDataRow';
 import ProjectionsProps from '../types/ProjectionsProps';
 import SMAType from '../types/SMAType';
-import options from '../helpers/charts';
 import { computeSMA, trainModel, makePredictions } from '../helpers/ProjectionsHelper.js';
 
 import './Projections.scss';
@@ -96,15 +96,33 @@ class Projections extends Component<ProjectionsProps, any> {
   }
 
   renderChart(showProjected: boolean = false) {
-    const { width } = this.props;
+    const { type } = this.props;
+    const series = this.getSeries(showProjected);
+    const actualData = series[0].data as [number, number][];
+    const trainedData = series[1].data as [number, number][];
+    const predictedData = series[2].data as [number, number][];
 
-    const plotOptions = {
-      ...options,
-      chart: { ...options.chart, width },
-      series: this.getSeries(showProjected)
-    };
+    // Merge all series into flat recharts-compatible objects keyed by timestamp
+    const map = new Map<number, any>();
+    actualData.forEach(([ts, v]) => map.set(ts, { date: dayjs(ts).format('MM/DD/YY'), [type]: v }));
+    trainedData.forEach(([ts, v]) => { const r = map.get(ts) || { date: dayjs(ts).format('MM/DD/YY') }; r.Trained = v; map.set(ts, r); });
+    predictedData.forEach(([ts, v]) => { const r = map.get(ts) || { date: dayjs(ts).format('MM/DD/YY') }; r.Predicted = v; map.set(ts, r); });
+    const data = Array.from(map.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    return (<HighchartsReact highcharts={Highcharts} options={plotOptions} />);
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+          <YAxis tick={{ fontSize: 11 }} />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey={type} stroke="#457B9D" dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="Trained" stroke="#2A9D8F" dot={false} isAnimationActive={false} />
+          {showProjected && <Line type="monotone" dataKey="Predicted" stroke="#FF00FF" strokeDasharray="5 5" dot={false} isAnimationActive={false} />}
+        </LineChart>
+      </ResponsiveContainer>
+    );
   }
 
   trainModel = async () => {

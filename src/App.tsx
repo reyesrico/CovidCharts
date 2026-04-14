@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import Select from 'react-select';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { isEqual, sortBy } from 'lodash';
 
 import CompareChart from './components/CompareChart';
@@ -39,14 +39,11 @@ class App extends Component<any, any> {
     usMap: {},
     isError: false,
     retryCount: 0,
-    width: 500,
     timeRange: '90' as TimeRange
   }
 
   componentDidMount() {
     const { defaultCountrySlug } = this.state;
-    const windowWidth = window.innerWidth;
-    const width = windowWidth >= 500 ? 500 : (windowWidth * 0.8);
 
     getCountries().then((res: any) => {
       let sorted = sortBy(res.data, ['Slug']);
@@ -58,7 +55,7 @@ class App extends Component<any, any> {
         return { ...row, value: row.Slug, label: row.Country, name: row.Slug };
       });
 
-      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[81], width });
+      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[81] });
     });
   }
 
@@ -137,45 +134,44 @@ class App extends Component<any, any> {
     return managed ? manageCountryData(data) : data;
   }
 
-  renderChart(country: CountryDataRow[], managed: boolean = false, compare: boolean = true) {
-    const { width } = this.state;
-
+  renderChart(country: CountryDataRow[], managed: boolean = false) {
     let data = this.getData(country, managed);
 
     if (!data || !data.length) return <div>No data</div>;
 
     return (
-      <AreaChart width={width} height={250} data={data}
-        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="colorDeaths" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="colorConfirmed" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <XAxis dataKey="Date" />
-        <YAxis />
-        <CartesianGrid strokeDasharray="3 3" />
-        <Tooltip />
-        <Area type="monotone" dataKey="Confirmed" stroke="#82ca9d" fillOpacity={1} fill="url(#colorConfirmed)" />
-        <Area type="monotone" dataKey="Deaths" stroke="#8884d8" fillOpacity={1} fill="url(#colorDeaths)" />
-      </AreaChart>
+      <ResponsiveContainer width="100%" height={250}>
+        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorDeaths" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#E63946" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#E63946" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorConfirmed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#457B9D" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#457B9D" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="Date" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} />
+          <CartesianGrid strokeDasharray="3 3" />
+          <Tooltip />
+          <Area type="monotone" dataKey="Confirmed" stroke="#457B9D" fillOpacity={1} fill="url(#colorConfirmed)" />
+          <Area type="monotone" dataKey="Deaths" stroke="#E63946" fillOpacity={1} fill="url(#colorDeaths)" />
+        </AreaChart>
+      </ResponsiveContainer>
     );
   }
 
   renderCompareChart(countryHasProvince: boolean) {
-    const { country, countries, countryCompare, width} = this.state;
+    const { country, countries, countryCompare, timeRange } = this.state;
     return (
       <div className="covid__chart">
         <h3 className="covid__chart-text">Compare with other country</h3>
         <div className="covid__chart-select">
           <Select onChange={(countryCompare: any) => this.setState({ countryCompare })} options={countries} value={countryCompare} />
         </div>
-        {country.length && <CompareChart data={this.getData(country, false, false)} width={width} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
+        {country.length && <CompareChart data={this.getData(country, false, false)} timeRange={timeRange} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
       </div>
     );
   }
@@ -187,7 +183,7 @@ class App extends Component<any, any> {
 
   render() {
     const { country, countries, countrySelected, isLoading, provinces,
-      provinceSelected, cities, citySelected, usMap, width, isError } = this.state;
+      provinceSelected, cities, citySelected, usMap, isError } = this.state;
 
     let countryText = countrySelected.label ?? 'Country';
     if (!countries.length || isLoading) return (<Loading size="xl" message={`Loading ${countryText} Data`} />);
@@ -223,7 +219,7 @@ class App extends Component<any, any> {
           {!countryHasProvince && this.renderCompareChart(countryHasProvince)}
           <hr />
           <h3 className="covid__chart-text">Make Your Own {this.renderTitle()} Chart</h3>
-          <MakeChart countries={countries} data={this.getData(country, false, false)} map={usMap} width={width} />
+          <MakeChart countries={countries} data={this.getData(country, false, false)} map={usMap} />
           <hr />
           <div className="covid__texts">
             <div className="covid__text">{countrySelected.label}</div>
@@ -232,10 +228,10 @@ class App extends Component<any, any> {
           </div>
           <hr />
           <h3 className="covid__chart-text">Projections Holt-Winter</h3>
-          {data.length && <ProjectionsHW data={data} type="Confirmed" width={width} />}
+          {data.length && <ProjectionsHW data={data} type="Confirmed" />}
           <hr />
           <h3 className="covid__chart-text">Covid Preditions (based on StockPredictions)</h3>
-          {data.length && <CovidPredictions data={data} width={width} />}
+          {data.length && <CovidPredictions data={data} />}
           <hr />
           {/* <h3 className="covid__chart-text">Confirmed Type Projections</h3>
           {country.length && <Projections data={this.getData(country, false, false)} type="Confirmed" width={width} />} */}

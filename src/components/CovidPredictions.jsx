@@ -1,15 +1,14 @@
 import React, { Component } from 'react';
 import * as tf from '@tensorflow/tfjs';
-
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 
 // import CountryDataRow from '../types/CountryDataRow';
 // import CovidPredictionsProps from '../types/CovidPredictionsProps';
 import Loading from './Loading';
-import options from '../helpers/charts';
 import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler, getMin, getMax } from '../helpers/predictionsHelper';
 import './CovidPredictions.scss';
 
@@ -273,16 +272,46 @@ class CovidPredictions extends Component {
     return series;
   }
 
+  buildPredictionData = () => {
+    const series = this.getSeries();
+    if (!series[0]?.data?.length) return [];
+    const { type } = this.state;
+    const actualSeries = series[0].data;
+    const predictedSeries = series[1]?.data;
+    const map = new Map();
+    actualSeries.forEach(([ts, val]) => {
+      map.set(ts, { date: dayjs(ts).format('MM/DD/YY'), [type]: val });
+    });
+    if (predictedSeries) {
+      predictedSeries.forEach(([ts, val]) => {
+        const row = map.get(ts) || { date: dayjs(ts).format('MM/DD/YY') };
+        row.Predicted = val;
+        map.set(ts, row);
+      });
+    }
+    return Array.from(map.values());
+  }
+
   renderChart() {
-    const { width } = this.props;
+    const data = this.buildPredictionData();
+    const { type } = this.state;
+    const hasPredicted = data.some(d => d.Predicted !== undefined);
 
-    const plotOptions = {
-      ...options,
-      chart: { ...options.chart, width },
-      series: this.getSeries()
-    };
-
-    return (<HighchartsReact highcharts={Highcharts} options={plotOptions} />);
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+          <YAxis tick={{ fontSize: 11 }} />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey={type} stroke="#457B9D" dot={false} isAnimationActive={false} />
+          {hasPredicted && (
+            <Line type="monotone" dataKey="Predicted" stroke="#FF00FF" strokeDasharray="5 5" dot={false} isAnimationActive={false} />
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    );
   }
 
   renderOptions = () => {

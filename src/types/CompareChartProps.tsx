@@ -1,8 +1,9 @@
 import CountryDataRow from './CountryDataRow';
+import TimeRange from './TimeRange';
 
 export default interface CompareChartProps {
-  width: number,
   data: CountryDataRow[]
   countryCompare: any,
-  hasProvinces: boolean
+  hasProvinces: boolean,
+  timeRange: TimeRange,
 }

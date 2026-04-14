@@ -1,13 +1,13 @@
 import React, { Component } from 'react';
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import dayjs from 'dayjs';
 import { isEqual, range } from 'lodash';
 import forecast from 'nostradamus';
 
 import CountryDataRow from '../types/CountryDataRow';
 import ProjectionsProps from '../types/ProjectionsProps';
-import options from '../helpers/charts';
 import './Projections.scss';
 
 class ProjectionsHW extends Component<ProjectionsProps, any> {
@@ -73,48 +73,49 @@ class ProjectionsHW extends Component<ProjectionsProps, any> {
     this.setState({ predictions: valuesLimited });
   }
 
-  getSeries = () => {
+  buildProjectionData = () => {
     const { data } = this.props;
-    const { predictions, period, ySlc } = this.state;
+    const { predictions, ySlc, period } = this.state;
+    if (!(predictions as number[]).length) return [];
 
-    let series: any = [];
-    let dateSize = (data.length >= 2 &&
-      data[0].Date &&
-      data[1].Date &&
-      (dayjs(data[1].Date).valueOf() - dayjs(data[0].Date).valueOf())) || 0;
+    const dateSize =
+      data.length >= 2 && data[0].Date && data[1].Date
+        ? dayjs(data[1].Date).valueOf() - dayjs(data[0].Date).valueOf()
+        : 86400000;
     const offset = data.length % period;
+    let projectedDate = data.length > 0 ? dayjs(data[data.length - 1].Date).valueOf() : dayjs().valueOf();
 
-    // @ts-ignore
-    let typeSeries = data.map((row: CountryDataRow) => [dayjs(row.Date).valueOf(), row[ySlc]]);
-    let date = typeSeries?.[0]?.[0];
-
-    let predicted = predictions.map((value: number, index: number) => {
-      const typeIndex = index + offset;
-      if (typeIndex < data.length) {
-        date = typeSeries[typeIndex][0];
-      } else {
-        date += dateSize
-      }
-
-      return [date, value];
+    return (predictions as number[]).map((value, index) => {
+      const actualIndex = index + offset;
+      const row = actualIndex < data.length ? data[actualIndex] : null;
+      if (!row) projectedDate += dateSize;
+      const ts = row ? dayjs(row.Date).valueOf() : projectedDate;
+      return {
+        date: dayjs(ts).format('MM/DD/YY'),
+        // @ts-expect-error
+        [ySlc]: row ? row[ySlc] : null,
+        Predicted: value,
+      };
     });
-
-    series.push({ type: 'area', name: ySlc, data: typeSeries });
-    series.push({ type: 'line', name: `Predicted ${ySlc}`, data: predicted, color: '#FF00FF' })
-
-    return series;
   }
 
   renderChart() {
-    const { width } = this.props;
+    const data = this.buildProjectionData();
+    const { ySlc } = this.state;
 
-    const plotOptions = {
-      ...options,
-      chart: { ...options.chart, width },
-      series: this.getSeries()
-    };
-
-    return (<HighchartsReact highcharts={Highcharts} options={plotOptions} />);
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+          <YAxis tick={{ fontSize: 11 }} />
+          <Tooltip />
+          <Legend />
+          <Line type="monotone" dataKey={ySlc} stroke="#457B9D" dot={false} isAnimationActive={false} connectNulls={false} />
+          <Line type="monotone" dataKey="Predicted" stroke="#FF00FF" strokeDasharray="5 5" dot={false} isAnimationActive={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
   }
 
   renderOptions = () => {
