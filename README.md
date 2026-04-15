@@ -1,52 +1,68 @@
-# Covid Charts
+# CovidCharts
 
-## Vision
-To provide charts to show if your country / state / city is reaching the flatten curve.
+**Live:** [reyesrico.github.io/CovidCharts](https://reyesrico.github.io/CovidCharts)
 
-## Where Data Is Coming From?
+A data-visualization platform for exploring COVID-19 trends by country, state/province, and city — with in-browser forecasting and machine-learning predictions.
 
-We are using [COVID-19 API](https://covid-api.com/) which provides data sourced from Johns Hopkins CSSE [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19).
+> **Data note:** Johns Hopkins CSSE via [covid-api.com](https://covid-api.com) — historical data through **March 9, 2023**.
 
-> **Note:** API data covers through **March 9, 2023**. All date ranges are anchored to that cutoff.
+---
 
-## Inspiration
-Living happily depends on how we are in our inner lives - our thoughts, emotions, beliefs and desires. Having a spiritual dimension means finding a sense of inner peace - both peace of mind and peace in the heart. It also means allowing our inner values to guide how we interact with the world around us - our concern for others, our connection with the natural world and our interest in making a positive contribution to society.
+## Features
 
-<hr />
-
-## What You Can Do
-
-**Select a Country** (or State/Province, or City) from the dropdown to load charts. Use the time-range buttons (1M / 3M / 6M / 1Y / ALL) to adjust how much history is shown.
-
-### Charts & Features
-
-| Feature | Description |
+| Section | What it does |
 |---|---|
-| **Total & Incremental** | Area charts for Confirmed and Deaths totals, plus daily incremental values |
-| **Stats Cards** | Quick-glance totals: Confirmed, Deaths, Recovered, Active |
+| **Country selector** | Pick any country; if it has states/provinces or cities, additional dropdowns appear automatically |
+| **Time range** | 1M / 3M / 6M / 1Y / ALL — anchored to the last available data date |
+| **Stats cards** | Confirmed, Deaths, Recovered, Active — with latest-period delta |
+| **Total chart** | Area chart of cumulative Confirmed + Deaths |
+| **Incremental chart** | Daily new cases and deaths |
 | **Compare** | Side-by-side comparison with a second country |
-| **Make Your Own Chart** | Pick any combination of metrics, apply a local date range (1W–ALL), rendered as gradient area fills |
-| **Projections – Holt-Winters** | Triple exponential smoothing forecast. Choose metric and number of weeks ahead (1W–12W). Forecast line extends as a red dashed line past the last historical data point |
-| **Covid Predictions (CNN)** | In-browser 1D-CNN model (TensorFlow.js). Train on historical data and predict future values. Extend the forecast incrementally |
+| **Make Your Own Chart** | Pick any combination of 8 metrics, local date range (1W–ALL), gradient area fills |
+| **Projections – Holt-Winters** | Triple exponential smoothing; choose metric & weeks ahead (1W–12W); red dashed forecast line |
+| **Covid Predictions (CNN)** | In-browser 1D-CNN via TensorFlow.js; live training progress bar; autoregressive forecast extension |
+| **Save Default** | Save current country + state to localStorage; restored automatically on next visit |
+| **8 Languages** | English, Español, Français, Português, 中文, हिन्दी, العربية, Русский — language switcher in header |
 
-<hr />
-
-## Try It!
-Covid Charts: [https://reyesrico.github.io/CovidCharts/](https://reyesrico.github.io/CovidCharts)
-
-<hr />
+---
 
 ## Tech Stack
 
-- React 16 + TypeScript, Vite
-- Recharts v2 (ComposedChart, Area, Line, ReferenceLine)
-- TensorFlow.js (in-browser CNN)
-- Holt-Winters triple exponential smoothing (custom inline implementation)
-- SCSS, react-select, dayjs, lodash
+| Layer | Technology |
+|---|---|
+| UI | React 16 + TypeScript, Vite 5 |
+| Charts | Recharts v2 — `ComposedChart`, `Area`, `Line`, `ReferenceLine` |
+| Styling | SCSS modules, CSS custom properties |
+| ML | TensorFlow.js 2 (1D-CNN, in-browser) |
+| Forecasting | Custom Holt-Winters triple exponential smoothing (ES module safe) |
+| i18n | i18next + react-i18next |
+| Utilities | dayjs, lodash, react-select |
+| Deploy | GitHub Pages via `gh-pages` |
 
-<hr />
+---
 
-## About
-Author: [Carlos Reyes-Rico (Carlos Reyes)](https://stuffie.azurewebsites.net/PM_Carlos-Reyes2.html)
+## Getting Started
 
-More Info: [Here](https://stuffie.azurewebsites.net/About_Init.aspx)
+```bash
+npm install
+npm start          # dev server → http://localhost:5173
+npm run build      # production build → dist/
+npm run deploy     # build + push to gh-pages branch
+```
+
+---
+
+## Flatten-Curve Examples
+
+Try these locations to see well-documented curve patterns:
+
+- **Germany** — early flattening
+- **South Korea** — rapid containment
+- **United States → New York → New York** — city-level detail
+
+---
+
+## Author
+
+[Carlos Reyes-Rico](http://stuffie.azurewebsites.net/PM_Carlos-Reyes2.html) · [@reyesrico](https://twitter.com/reyesrico)
+
