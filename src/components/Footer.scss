@@ -1,23 +1,97 @@
 .footer {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  border-top: 2px solid gray;
-  font-size: 16px;
-  padding-top: 8px;
-  padding-right: 8px;
-  margin-top: 8px;
-  margin-bottom: 8px;
-  width: 100%;
+  margin-top: 40px;
+  background: var(--bg-dark);
+  color: rgba(255, 255, 255, 0.75);
 }
 
-@media screen and (max-width: 500px) {
-  .footer {
-    display: flex;
+.footer__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+/* ── Brand ─────────────────────────────── */
+.footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.footer__logo {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.footer__tagline {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+
+  a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+/* ── Links ─────────────────────────────── */
+.footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+}
+
+.footer__link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.footer__icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* ── Data note ─────────────────────────── */
+.footer__note {
+  width: 100%;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+
+@media screen and (max-width: 600px) {
+  .footer__inner {
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    font-size: 12px;
+    text-align: center;
+  }
+
+  .footer__links {
+    justify-content: center;
   }
 }
