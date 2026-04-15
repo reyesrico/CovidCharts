@@ -68,6 +68,12 @@ body {
   align-items: flex-end;
 }
 
+.covid__header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .covid__dropdowns {
   display: flex;
   flex-direction: row;
@@ -76,6 +82,12 @@ body {
   justify-content: flex-end;
 
   > div { min-width: 180px; }
+}
+
+/* react-select full-width helper (applied via SELECT_STYLES on small screens) */
+.covid__dropdowns--full > div {
+  width: 100%;
+  min-width: unset;
 }
 
 /* ── Error banner ────────────────────────────── */
@@ -146,19 +158,34 @@ body {
   }
 
   .covid__header-controls {
-    align-items: flex-start;
+    align-items: stretch;
     width: 100%;
   }
 
+  .covid__header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .covid__dropdowns {
-    justify-content: flex-start;
-    > div { min-width: 140px; flex: 1; }
+    flex-direction: column;
+    justify-content: stretch;
+    width: 100%;
+
+    > div {
+      min-width: unset;
+      width: 100%;
+    }
   }
 }
 
 @media screen and (max-width: 480px) {
   .covid__dropdowns {
     flex-direction: column;
-    > div { min-width: unset; width: 100%; }
+
+    > div {
+      min-width: unset;
+      width: 100%;
+    }
   }
 }

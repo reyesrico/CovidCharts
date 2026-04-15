@@ -1,13 +1,15 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Select from 'react-select';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { isEqual, sortBy } from 'lodash';
+import { sortBy } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import CompareChart from './components/CompareChart';
 import CountryDataRow from './types/CountryDataRow';
 import CovidPredictions from './components/CovidPredictions';
 import Footer from './components/Footer';
 import Instructions from './components/Instructions';
+import LanguageSwitcher from './components/LanguageSwitcher';
 import Loading from './components/Loading';
 import MakeChart from './components/MakeChart';
 import StatsCards from './components/StatsCards';
@@ -22,123 +24,168 @@ import TimeRange from './types/TimeRange';
 
 import './App.scss';
 
-class App extends Component<any, any> {
-  state = {
-    defaultCountrySlug: localStorage.getItem('country') || 'mexico',
-    menu: { 'fn': null },
-    all: null,
-    country: [],
-    countryData: [],
-    countries: [],
-    countrySelected: { name: null, Country: '', value: '', label: null },
-    countryCompare: { name: null, Country: '', value: '', label: null },
-    isLoading: false,
-    provinces: [],
-    provinceData: [],
-    provinceSelected: { name: null, value: '', label: null },
-    cities: [],
-    citySelected: { name: null, value: '', label: null },
-    usMap: {},
-    isError: false,
-    retryCount: 0,
-    timeRange: '90' as TimeRange
-  }
+const SELECT_STYLES = {
+  container:   (base: any) => ({ ...base, width: '100%' }),
+  singleValue: (base: any) => ({ ...base, color: '#212529' }),
+  input:       (base: any) => ({ ...base, color: '#212529' }),
+  placeholder: (base: any) => ({ ...base, color: '#6C757D' }),
+  option: (base: any, state: any) => ({
+    ...base,
+    color: state.isSelected ? '#fff' : '#212529',
+    backgroundColor: state.isSelected ? '#457B9D' : state.isFocused ? '#e8f4f8' : '#fff',
+  }),
+};
 
-  componentDidMount() {
-    const { defaultCountrySlug } = this.state;
+const App: React.FC = () => {
+  const { t } = useTranslation();
 
+  // Read saved defaults (support both old 'country' key and new 'defaultCountry')
+  const defaultCountrySlug   = localStorage.getItem('defaultCountry') || localStorage.getItem('country') || 'mex';
+  const defaultProvinceLabel = localStorage.getItem('defaultProvince') || null;
+
+  const [country, setCountry] = useState<CountryDataRow[]>([]);
+  const [countries, setCountries] = useState<any[]>([]);
+  const [countrySelected, setCountrySelected] = useState<any>({ name: null, Country: '', value: '', label: null });
+  const [countryCompare, setCountryCompare] = useState<any>({ name: null, Country: '', value: '', label: null });
+  const [isLoading, setIsLoading] = useState(false);
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [provinceData, setProvinceData] = useState<any[]>([]);
+  const [provinceSelected, setProvinceSelected] = useState<any>({ name: null, value: '', label: null });
+  const [cities, setCities] = useState<any[]>([]);
+  const [citySelected, setCitySelected] = useState<any>({ name: null, value: '', label: null });
+  const [usMap, setUsMap] = useState<any>({});
+  const [isError, setIsError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [timeRange, setTimeRange] = useState<TimeRange>('90');
+
+  // In-memory cache: countrySlug → { map, provinces }  for fast re-navigation
+  const stateCache = useRef<Record<string, { map: any; provinces: any[] }>>({});
+
+  // Load countries on mount
+  useEffect(() => {
+    let mounted = true;
     getCountries().then((res: any) => {
-      let sorted = sortBy(res.data, ['Slug']);
+      if (!mounted) return;
+      const sorted = sortBy(res.data, ['Slug']);
       let id = 0;
-      let countries = sorted.map((row: any, index: number) => {
-        if (row.Slug === defaultCountrySlug) {
-          id = index;
-        }
+      const loadedCountries = sorted.map((row: any, index: number) => {
+        // match by ISO slug or by country name (handles old localStorage values like 'mexico')
+        if (
+          row.Slug === defaultCountrySlug ||
+          row.Country?.toLowerCase() === defaultCountrySlug.toLowerCase()
+        ) id = index;
         return { ...row, value: row.Slug, label: row.Country, name: row.Slug };
       });
-
-      this.setState({ countries, countrySelected: countries[id], countryCompare: countries[81] });
+      setCountries(loadedCountries);
+      setCountrySelected(loadedCountries[id]);
+      setCountryCompare(loadedCountries[81]);
     });
-  }
+    return () => { mounted = false; };
+  }, []);
 
-  componentDidUpdate(prevProps: any, prevState: any) {
-    if (this.state.isError && this.state.retryCount < 3) {
-      this.getCountryInfo(true);
-    } else if (!this.state.isLoading && !this.state.isError) {
-      if (!isEqual(prevState.countrySelected, this.state.countrySelected) ||
-          prevState.timeRange !== this.state.timeRange) {
-        this.getCountryInfo();
-      } else {
-        if (!isEqual(prevState.provinceSelected, this.state.provinceSelected)) {
-          if (hasCity(this.state.country)) {
-            let cities = getUniqueCities(this.state.usMap, this.state.provinceSelected);
-            this.setState({ cities, citySelected: cities[0] });
-          }
-        }
-      }
+  // Fetch country data when selection or time range changes
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (!countrySelected.value) return;
+    // Cancel any in-flight request before starting a new one
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    getCountryInfo();
+    return () => { abortRef.current?.abort(); };
+  }, [countrySelected, timeRange]);
+
+  // Retry on error
+  useEffect(() => {
+    if (isError && retryCount < 3) {
+      getCountryInfo(true);
     }
-  }
+  }, [isError, retryCount]);
 
-  getCountryInfo = (isRetry: boolean = false) => {
-    const { countrySelected, retryCount, timeRange } = this.state;
+  // Update cities when province selection changes
+  useEffect(() => {
+    if (hasCity(country) && provinceSelected?.name) {
+      const newCities = getUniqueCities(usMap, provinceSelected);
+      setCities(newCities);
+      setCitySelected(newCities[0]);
+    }
+  }, [provinceSelected]);
 
-    this.setState({ isLoading: true, isError: false, retryCount: isRetry ? retryCount + 1 : 0 });
+  const getCountryInfo = (isRetry: boolean = false) => {
+    setIsLoading(true);
+    setIsError(false);
+    setRetryCount(prev => isRetry ? prev + 1 : 0);
 
-    const dateTo = formatDate(new Date());
+    // API data only exists through 2023-03-09 — anchor ranges to that date, not today
+    const DATA_END = '2023-03-09';
+    const dateTo = DATA_END;
     const dateFrom = timeRange === 'all'
       ? '2020-01-22'
-      : formatDate(getDaysAgoDate(parseInt(timeRange, 10)));
+      : formatDate(getDaysAgoDate(parseInt(timeRange, 10), new Date(DATA_END)));
 
+    const signal = abortRef.current?.signal;
     getCountryByDateRange(countrySelected.value, dateFrom, dateTo)
       .then(res => {
-        const country = res.data;
-        let usMap, provinces, provinceSelected, cities, citySelected;
+        if (signal?.aborted) return;
+        const loadedCountry = res.data;
+        if (hasProvince(loadedCountry)) {
+          const map = createMap(loadedCountry);
+          const provs = getProvinces(map);
 
-        if (hasProvince(country)) {
-          usMap = createMap(country);
-          provinces = getProvinces(usMap);
-          provinceSelected = provinces[0];
+          // Cache for fast re-navigation
+          stateCache.current[countrySelected.value] = { map, provinces: provs };
 
-          if (hasCity(country)) {
-            cities = getUniqueCities(usMap, provinceSelected);
-            citySelected = cities[0];
+          // Restore saved province if this is the default country on first load,
+          // otherwise fall back to first province
+          const savedProv = defaultProvinceLabel
+            ? provs.find((p: any) => p.label === defaultProvinceLabel) ?? provs[0]
+            : provs[0];
+          const provSelected = savedProv;
+
+          if (hasCity(loadedCountry)) {
+            const newCities = getUniqueCities(map, provSelected);
+            setCities(newCities);
+            setCitySelected(newCities[0]);
           }
-
-          this.setState({ usMap, country, cities, provinces, provinceSelected, citySelected });
+          setUsMap(map);
+          setCountry(loadedCountry);
+          setProvinces(provs);
+          setProvinceSelected(provSelected);
         } else {
-          this.setState({
-            country,
-            usMap: {},
-            provinceSelected: { name: null },
-            provinces: [],
-            provinceData: [],
-            citySelected: { name: null },
-            cities: []
-          });
+          setCountry(loadedCountry);
+          setUsMap({});
+          setProvinceSelected({ name: null, value: '', label: null });
+          setProvinces([]);
+          setProvinceData([]);
+          setCitySelected({ name: null, value: '', label: null });
+          setCities([]);
         }
       })
-      .catch(() => this.setState({ isError: true }))
-      .finally(() => this.setState({ isLoading: false }));
-  }
+      .catch((err: any) => { if (err?.name !== 'AbortError') setIsError(true); })
+      .finally(() => { if (!signal?.aborted) setIsLoading(false); });
+  };
 
+  const getData = (src: CountryDataRow[], managed: boolean = false, changeDates: boolean = true): CountryDataRow[] => {
+    let data: CountryDataRow[] | undefined;
 
+    if (hasCity(src)) {
+      data = getCityData(usMap, provinceSelected, citySelected);
+    } else if (hasProvince(src)) {
+      data = usMap[provinceSelected.label];
+    } else {
+      data = src;
+    }
 
-  getData = (country: CountryDataRow[], managed: boolean = false, changeDates: boolean = true) => {
-    const { usMap, citySelected, provinceSelected } = this.state;
-
-    let data = hasCity(country) ? getCityData(usMap, provinceSelected, citySelected) :
-      // @ts-ignore
-      hasProvince(country) ? usMap[provinceSelected.label] :
-        country;
-
+    if (!data || !data.length) return [];
     data = changeDates ? updateDates(data) : data;
+    if (managed) {
+      const managedData = manageCountryData(data);
+      return managedData ?? [];
+    }
+    return data;
+  };
 
-    return managed ? manageCountryData(data) : data;
-  }
-
-  renderChart(country: CountryDataRow[], managed: boolean = false) {
-    let data = this.getData(country, managed);
-
+  const renderChart = (src: CountryDataRow[], managed: boolean = false) => {
+    const data = getData(src, managed);
     if (!data || !data.length) return <div>No data</div>;
 
     return (
@@ -163,98 +210,89 @@ class App extends Component<any, any> {
         </AreaChart>
       </ResponsiveContainer>
     );
-  }
+  };
 
-  renderCompareChart(countryHasProvince: boolean) {
-    const { country, countries, countryCompare, timeRange } = this.state;
-    return (
-      <div className="covid__chart">
-        <h3 className="covid__chart-text">Compare with other country</h3>
-        <div className="covid__chart-select">
-          <Select onChange={(countryCompare: any) => this.setState({ countryCompare })} options={countries} value={countryCompare} />
+  const countryHasProvince = hasProvince(country);
+  const countryHasCity = hasCity(country);
+  // Only compute display data once provinces/cities are settled to avoid undefined map lookups
+  const isProvinceReady = !countryHasProvince || (provinces.length > 0 && provinceSelected?.label);
+  const data = isProvinceReady ? getData(country, false, false) : [];
+  const countryText = countrySelected.label ?? 'Country';
+  const title = citySelected?.label ?? provinceSelected?.label ?? countrySelected.label;
+
+  if (!countries.length) return <Loading size="xl" message={t('header.loadingCountries')} />;
+
+  return (
+    <div className="covid">
+      <header className="covid__header">
+        <div className="covid__header-title">
+          <h1 className="covid__title">{t('header.title')}</h1>
+          <span className="covid__disclaimer">{t('header.disclaimer')}</span>
         </div>
-        {country.length && <CompareChart data={this.getData(country, false, false)} timeRange={timeRange} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
-      </div>
-    );
-  }
-  
-  renderTitle = () => {
-    const { citySelected, provinceSelected, countrySelected } = this.state;
-    return citySelected?.label ?? provinceSelected?.label  ?? countrySelected.label;
-  }
-
-  render() {
-    const { country, countries, countrySelected, isLoading, provinces,
-      provinceSelected, cities, citySelected, usMap, isError, timeRange } = this.state;
-
-    // Full-page spinner only on initial data load (no countries yet)
-    if (!countries.length) return (<Loading size="xl" message="Loading Countries..." />);
-
-    let countryHasProvince = hasProvince(country);
-    let countryHasCity = hasCity(country);
-    let data = this.getData(country, false, false);
-    const countryText = countrySelected.label ?? 'Country';
-
-    return (
-      <div className="covid">
-        <header className="covid__header">
-          <div className="covid__header-title">
-            <h1 className="covid__title">CovidCharts</h1>
-            <span className="covid__disclaimer">Data: Johns Hopkins CSSE via <a href="https://covid-api.com" target="_blank" rel="noopener noreferrer">covid-api.com</a> &mdash; through Mar 2023</span>
+        <div className="covid__header-controls">
+          <div className="covid__dropdowns">
+            <Select styles={SELECT_STYLES} onChange={(selected: any) => setCountrySelected(selected)} options={countries} value={countrySelected} />
+            {countryHasProvince && <Select styles={SELECT_STYLES} onChange={(selected: any) => setProvinceSelected(selected)} options={provinces} value={provinceSelected} />}
+            {countryHasCity && <Select styles={SELECT_STYLES} onChange={(selected: any) => setCitySelected(selected)} options={cities} value={citySelected} />}
           </div>
-          <div className="covid__header-controls">
-            <div className="covid__dropdowns">
-              <Select onChange={(countrySelected: any) => this.setState({ countrySelected })} options={countries} value={countrySelected} />
-              {countryHasProvince && <Select onChange={(provinceSelected: any) => this.setState({ provinceSelected })} options={provinces} value={provinceSelected} />}
-              {countryHasCity && <Select onChange={(citySelected: any) => this.setState({ citySelected })} options={cities} value={citySelected} />}
-            </div>
+          <div className="covid__header-right">
             <TimeRangeSelector
               value={timeRange}
-              onChange={(timeRange) => this.setState({ timeRange })}
+              onChange={(range) => setTimeRange(range)}
               disabled={isLoading}
             />
+            <LanguageSwitcher />
           </div>
-        </header>
-
-        <Instructions countrySelected={countrySelected} />
-
-        {isError && (
-          <div className="covid__error">
-            Error loading data for <b>{countryText}</b>.
-            <button className="covid__error-retry" onClick={() => this.getCountryInfo()}>Retry</button>
-          </div>
-        )}
-
-        {country.length > 0 && <StatsCards data={data} />}
-
-        <div className="covid__charts">
-          {isLoading ? (
-            <ChartSkeleton height={280} message={`Loading ${countryText} data…`} />
-          ) : (
-            <>
-              <h3 className="covid__chart-text">Total Confirmed and Deaths</h3>
-              {this.renderChart(country)}
-              <hr />
-              <h3 className="covid__chart-text">Incremental Confirmed and Deaths</h3>
-              {this.renderChart(country, true)}
-              <hr />
-              {!countryHasProvince && this.renderCompareChart(countryHasProvince)}
-              <hr />
-              <h3 className="covid__chart-text">Make Your Own {this.renderTitle()} Chart</h3>
-              <MakeChart countries={countries} data={this.getData(country, false, false)} map={usMap} />
-              <hr />
-              <h3 className="covid__chart-text">Projections Holt-Winter</h3>
-              {data.length && <ProjectionsHW data={data} type="Confirmed" />}
-              <hr />
-              <h3 className="covid__chart-text">Covid Predictions (based on Stock Predictions)</h3>
-              {data.length && <CovidPredictions data={data} />}
-            </>
-          )}
         </div>
-        <Footer />
+      </header>
+
+      <Instructions countrySelected={countrySelected} provinceSelected={provinceSelected} />
+
+      {isError && (
+        <div className="covid__error">
+          {t('error.loading', { country: countryText })}
+          <button className="covid__error-retry" onClick={() => getCountryInfo()}>{t('error.retry')}</button>
+        </div>
+      )}
+
+      {country.length > 0 && <StatsCards data={data} />}
+
+      <div className="covid__charts">
+        {isLoading ? (
+          <ChartSkeleton height={280} message={t('header.loadingData', { country: countryText })} />
+        ) : (
+          <>
+            <h3 className="covid__chart-text">{t('chart.totalTitle')}</h3>
+            {renderChart(country)}
+            <hr />
+            <h3 className="covid__chart-text">{t('chart.incrementalTitle')}</h3>
+            {renderChart(country, true)}
+            <hr />
+            {!countryHasProvince && (
+              <div className="covid__chart">
+                <h3 className="covid__chart-text">{t('chart.compareTitle')}</h3>
+                <div className="covid__chart-select">
+                  <Select styles={SELECT_STYLES} onChange={(selected: any) => setCountryCompare(selected)} options={countries} value={countryCompare} />
+                </div>
+                {country.length > 0 && <CompareChart data={getData(country, false, false)} timeRange={timeRange} countryCompare={countryCompare} hasProvinces={countryHasProvince} />}
+              </div>
+            )}
+            <hr />
+            <h3 className="covid__chart-text">{t('chart.makeTitle', { title })}</h3>
+            <MakeChart countries={countries} data={getData(country, false, false)} map={usMap} />
+            <hr />
+            <h3 className="covid__chart-text">{t('chart.projectionsTitle')}</h3>
+            {data.length > 0 && <ProjectionsHW data={data} type="Confirmed" />}
+            <hr />
+            <h3 className="covid__chart-text">{t('chart.predictionsTitle')}</h3>
+            {data.length > 0 && <CovidPredictions data={data} />}
+          </>
+        )}
       </div>
-    );
-  }
-}
+      <Footer />
+    </div>
+  );
+};
 
 export default App;
+
