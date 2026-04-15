@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import CountryDataRow from '../types/CountryDataRow';
 import ProjectionsProps from '../types/ProjectionsProps';
@@ -147,6 +148,7 @@ const buildChartData = (
 };
 
 const ProjectionsHW: React.FC<ProjectionsProps> = ({ data }) => {
+  const { t } = useTranslation();
   const [projections, setProjections] = useState<number[]>([]);
   const [weeksAhead, setWeeksAhead] = useState(2);
   const [ySlc, setYSlc] = useState('Confirmed');
@@ -184,7 +186,7 @@ const ProjectionsHW: React.FC<ProjectionsProps> = ({ data }) => {
       {/* Controls */}
       <div className="hw__controls">
         <div className="hw__control-group">
-          <span className="hw__label">Metric</span>
+          <span className="hw__label">{t('projections.metric')}</span>
           <div className="hw__pills">
             {Y_VALS.map(({ value, text }) => (
               <button
@@ -198,7 +200,7 @@ const ProjectionsHW: React.FC<ProjectionsProps> = ({ data }) => {
           </div>
         </div>
         <div className="hw__control-group">
-          <span className="hw__label">Weeks to forecast</span>
+          <span className="hw__label">{t('projections.weeksAhead')}</span>
           <div className="hw__pills">
             {WEEK_OPTIONS.map(w => (
               <button
@@ -215,7 +217,7 @@ const ProjectionsHW: React.FC<ProjectionsProps> = ({ data }) => {
 
       {/* Chart */}
       {!projections.length
-        ? <div className="hw__empty">Not enough data to compute forecast (need ≥ {PERIOD * 2} data points)</div>
+        ? <div className="hw__empty">{t('projections.noData', { n: PERIOD * 2 })}</div>
         : (
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart data={chartData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>

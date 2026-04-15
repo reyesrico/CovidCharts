@@ -1,362 +1,284 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
-// import CountryDataRow from '../types/CountryDataRow';
-// import CovidPredictionsProps from '../types/CovidPredictionsProps';
 import Loading from './Loading';
 import { processData, generateNextDayPrediction, minMaxScaler, minMaxInverseScaler, getMin, getMax } from '../helpers/predictionsHelper';
 import './CovidPredictions.scss';
 
-class CovidPredictions extends Component {
-  state = {
-    epochs: 100,
-    timePortion: 7,
-    predictedData: [],
-    predictedDates: [],
-    isLoading: false,
-    message: '',
-    error: null,
-    model: { predict: (rank) => {} },
-    wait: false,
-    yValues: ['Confirmed', 'Deaths', 'Recovered', 'Active'],
-    type: 'Confirmed'
-  }
+const Y_VALUES = ['Confirmed', 'Deaths', 'Recovered', 'Active'];
 
-  componentDidUpdate(prevProps, prevState) {
-    if (!isEqual(prevProps, this.props)) {
-      this.setState({
-        predictedData: [],
-        predictedDates: [],
-        isLoading: false,
-        message: '',
-        error: null,
-        wait: false,
-        type: 'Confirmed'
-      });
-    } else if (!isEqual(prevState.type, this.state.type)) {
-      this.setState({
-        predictedData: [],
-        predictedDates: [],
-        isLoading: false,
-        message: '',
-        error: null,
-        wait: false,
-      });
+/**
+ * 1D-CNN model for univariate time-series prediction.
+ * Input: sliding window of `timePortion` consecutive values.
+ * Architecture: Conv1D(128) → AvgPool → Conv1D(64) → AvgPool → Flatten → Dense(1)
+ * Trained once; `predictMore` extends using the already-trained model autoregressively.
+ */
+const CovidPredictions = ({ data }) => {
+  const { t } = useTranslation();
+  const [epochs]      = useState(50);   // reduced from 100 for faster in-browser training
+  const [timePortion] = useState(7);
+  const [predictedData,  setPredictedData]  = useState([]);
+  const [predictedDates, setPredictedDates] = useState([]);
+  const [isLoading,  setIsLoading]  = useState(false);
+  const [message,    setMessage]    = useState('');
+  const [progress,   setProgress]   = useState(0);   // 0-100 training progress
+  const [error,      setError]      = useState(null);
+  const [model,      setModel]      = useState(null);
+  const [wait,       setWait]       = useState(false);
+  const [type,       setType]       = useState('Confirmed');
+  const prevDataRef = useRef(data);
+
+  const resetPredictions = () => {
+    setPredictedData([]);
+    setPredictedDates([]);
+    setIsLoading(false);
+    setMessage('');
+    setProgress(0);
+    setError(null);
+    setWait(false);
+    setModel(null);
+  };
+
+  useEffect(() => {
+    if (!isEqual(prevDataRef.current, data)) {
+      prevDataRef.current = data;
+      resetPredictions();
+      setType('Confirmed');
     }
-  }
+  }, [data]);
 
-  buildCnn(data) {
-    return new Promise((resolve, reject) => {
-      // Linear (sequential) stack of layers
-      let model = null;
+  useEffect(() => {
+    resetPredictions();
+  }, [type]);
 
-      try {
-        // Linear (sequential) stack of layers
-        model = tf.sequential();
+  const buildCnn = (modelData) => new Promise((resolve, reject) => {
+    try {
+      const m = tf.sequential();
+      m.add(tf.layers.inputLayer({ inputShape: [timePortion, 1] }));
+      m.add(tf.layers.conv1d({ kernelSize: 2, filters: 64, strides: 1, useBias: true, activation: 'relu', kernelInitializer: 'VarianceScaling' }));
+      m.add(tf.layers.averagePooling1d({ poolSize: [2], strides: [1] }));
+      m.add(tf.layers.conv1d({ kernelSize: 2, filters: 32, strides: 1, useBias: true, activation: 'relu', kernelInitializer: 'VarianceScaling' }));
+      m.add(tf.layers.averagePooling1d({ poolSize: [2], strides: [1] }));
+      m.add(tf.layers.flatten());
+      m.add(tf.layers.dense({ units: 1, kernelInitializer: 'VarianceScaling', activation: 'linear' }));
+      resolve({ model: m, data: modelData });
+    } catch (err) {
+      reject(`Model not created: ${err}`);
+    }
+  });
 
-        // Define input layer
-        model.add(tf.layers.inputLayer({
-          inputShape: [7, 1],
-        }));
+  const trainCnn = (cnnModel, tensorData) => new Promise((resolve, reject) => {
+    try {
+      cnnModel.compile({ optimizer: 'adam', loss: 'meanSquaredError' });
+      cnnModel.fit(tensorData.tensorTrainX, tensorData.tensorTrainY, {
+        epochs,
+        callbacks: {
+          onEpochEnd: (epoch) => setProgress(Math.round(((epoch + 1) / epochs) * 100)),
+        },
+      }).then(() => resolve(cnnModel));
+    } catch (ex) {
+      reject(ex);
+    }
+  });
 
-        // Add the first convolutional layer
-        model.add(tf.layers.conv1d({
-          kernelSize: 2,
-          filters: 128,
-          strides: 1,
-          useBias: true,
-          activation: 'relu',
-          kernelInitializer: 'VarianceScaling'
-        }));
+  const loadData = () => {
+    const labels = data.map(row => row.Date);
+    setIsLoading(true);
+    setProgress(0);
+    setMessage('Processing data…');
 
-        // Add the Average Pooling layer
-        model.add(tf.layers.averagePooling1d({
-          poolSize: [2],
-          strides: [1]
-        }));
+    processData(data, type, timePortion).then(result => {
+      const nextDayPrediction = generateNextDayPrediction(result.originalData, result.timePortion);
+      setMessage('Building model…');
 
-        // Add the second convolutional layer
-        model.add(tf.layers.conv1d({
-          kernelSize: 2,
-          filters: 64,
-          strides: 1,
-          useBias: true,
-          activation: 'relu',
-          kernelInitializer: 'VarianceScaling'
-        }));
-
-        // Add the Average Pooling layer
-        model.add(tf.layers.averagePooling1d({
-          poolSize: [2],
-          strides: [1]
-        }));
-
-        // Add Flatten layer, reshape input to (number of samples, number of features)
-        model.add(tf.layers.flatten({
-
-        }));
-
-        // Add Dense layer, 
-        model.add(tf.layers.dense({
-          units: 1,
-          kernelInitializer: 'VarianceScaling',
-          activation: 'linear'
-        }));
-
-        return resolve({
-          'model': model,
-          'data': data
-        });  
-      } catch(error) {
-        return reject(`Model not created: ${error}`);
-      } 
-    });
-  }
-
-  cnn(model, data, epochs){
-    // console.log("MODEL SUMMARY: ")
-    model.summary();
-
-    return new Promise((resolve, reject) => {
-      try {
-        // Optimize using adam (adaptive moment estimation) algorithm
-        model.compile({ optimizer: 'adam', loss: 'meanSquaredError' });
-
-        // Train the model
-        model.fit(data.tensorTrainX, data.tensorTrainY, { epochs: epochs }).then((result) => {
-          // console.log("Loss after last Epoch (" + result.epoch.length + ") is: " + result.history.loss[result.epoch.length - 1]);
-          resolve(model);
-        });
-      }
-      catch (ex) {
-        reject(ex);
-      }
-    });
-  }
-
-  loadData() {
-    const { data } = this.props;
-    const { timePortion, epochs, type } = this.state;
-
-    // Get the datetime labels use in graph
-    let labels = data.map(row => row.Date);    // DATES!!!
-
-    this.setState({ isLoading: true, message: 'Processing...' });
-
-    // Process the data and create the train sets
-    processData(data, type, timePortion).then(result => {     // TIMEPORTION IS WINDOWSIZE
-
-      // Crate the set for stock price prediction for the next day
-      let nextDayPrediction = generateNextDayPrediction(result.originalData, result.timePortion);
-
-      this.setState({ message: "Getting model" });
-
-      // Build the Convolutional Tensorflow model
-      this.buildCnn(result).then(built => {
-
-        // Transform the data to tensor data
-        // Reshape the data in neural network input format [number_of_samples, timePortion, 1];
-        let tensorData = {
+      buildCnn(result).then(built => {
+        const tensorData = {
           tensorTrainX: tf.tensor1d(built.data.trainX).reshape([built.data.size, built.data.timePortion, 1]),
-          tensorTrainY: tf.tensor1d(built.data.trainY)
+          tensorTrainY: tf.tensor1d(built.data.trainY),
         };
+        const { max, min } = built.data;
+        setMessage('Training CNN…');
+        setModel(built.model);
 
-        // Rember the min and max in order to revert (min-max scaler) the scaled data later 
-        let max = built.data.max;
-        let min = built.data.min;
+        trainCnn(built.model, tensorData).then(trainedModel => {
+          setMessage('Generating predictions…');
+          const predictedX   = trainedModel.predict(tensorData.tensorTrainX);
+          const scaledNextDay = minMaxScaler(nextDayPrediction, min, max);
+          const tensorNextDay = tf.tensor1d(scaledNextDay.data).reshape([1, timePortion, 1]);
+          const predictedValue = trainedModel.predict(tensorNextDay);
 
-        this.setState({ message: "Getting data with model", model: built.model });
-
-        // Train the model using the tensor data
-        // Repeat multiple epochs so the error rate is smaller (better fit for the data)
-        this.cnn(built.model, tensorData, epochs).then((model) => {
-          // Predict for the same train data
-          // We gonna show the both (original, predicted) sets on the graph 
-          // so we can see how well our model fits the data
-          var predictedX = model.predict(tensorData.tensorTrainX);
-
-          // Scale the next day features
-          let nextDayPredictionScaled = minMaxScaler(nextDayPrediction, min, max);
-          // Transform to tensor data
-          let tensorNextDayPrediction = tf.tensor1d(nextDayPredictionScaled.data).reshape([1, built.data.timePortion, 1]);
-
-          // Predict the next day stock price
-          let predictedValue = model.predict(tensorNextDayPrediction);
-
-          this.setState({ message: "Getting predictedValue data" });
-          // Get the predicted data for the train set
-          predictedValue.data().then((predValue) => {
-
-            // Revert the scaled features, so we get the real values
-            let inversePredictedValue = minMaxInverseScaler(predValue, min, max);
-
-            this.setState({ message: "Finishing and cleaning data "});
-            // Get the next day predicted value
-            predictedX.data().then((pred) => {
-              // Revert the scaled feature
-              var predictedXInverse = minMaxInverseScaler(pred, min, max);
-
-              // Convert Float32Array to regular Array, so we can add additional value
+          predictedValue.data().then(predValue => {
+            const inversePred = minMaxInverseScaler(predValue, min, max);
+            predictedX.data().then(pred => {
+              let predictedXInverse = minMaxInverseScaler(pred, min, max);
               predictedXInverse.data = Array.prototype.slice.call(predictedXInverse.data);
-              // Add the next day predicted stock price so it's showed on the graph
-              predictedXInverse.data = [
-                ...predictedXInverse.data,
-                ...inversePredictedValue.data];  // EL ULTIMO
-              // predictedXInverse.data[predictedXInverse.data.length] = inversePredictedValue.data[0];
-
-              // Revert the scaled labels from the trainY (original), 
-              // so we can compare them with the predicted one
-              // var trainYInverse = minMaxInverseScaler(built.data.trainY, min, max);
-
-              // Plot the original (trainY) and predicted values for the same features set (trainX)
-              // plotData(trainYInverse.data, predictedXInverse.data, labels);
-              // console.log(trainYInverse.data);   // 123   vs 130 total
-              // console.log(predictedXInverse.data);  // 124   (123 + 1)
-              // console.log(labels);  // 130 ?
-
-              this.setState({ predictedData: predictedXInverse.data, predictedDates: labels, isLoading: false, message: "" });
+              predictedXInverse.data = [...predictedXInverse.data, ...inversePred.data];
+              setPredictedData(predictedXInverse.data);
+              setPredictedDates(labels);
+              setIsLoading(false);
+              setMessage('');
+              setProgress(100);
             });
           });
-        }, (error) => this.setState({ error, isLoading: false }));
-      }, (error) => this.setState({ error, isLoading: false }));
+        }, err => { setError(String(err)); setIsLoading(false); });
+      }, err => { setError(String(err)); setIsLoading(false); });
     });
-  }
+  };
 
-  predictMore = () => {
-    const { predictedData, timePortion, model } = this.state;
-
-    this.setState({ wait: true });
-    let data = [...predictedData];
-    let nextDayPrediction = generateNextDayPrediction(data, timePortion);
-
-    let min = getMin(predictedData);
-    let max = getMax(predictedData);
-    let nextDayPredictionScaled = minMaxScaler(nextDayPrediction, min, max);
-    let tensorNextDayPrediction = tf.tensor1d(nextDayPredictionScaled.data).reshape([1, timePortion, 1]);
-    let newPredictedValue = model.predict(tensorNextDayPrediction);
-
-    // @ts-ignore
-    newPredictedValue.data().then((pred) => {
-      let predictedXInverse = minMaxInverseScaler(pred, min, max);
-      predictedXInverse.data = Array.prototype.slice.call(predictedXInverse.data);
-      this.setState({ predictedData: [...predictedData, ...predictedXInverse.data], wait: false });
+  const predictMore = () => {
+    if (!model) return;
+    setWait(true);
+    const nextDayPrediction = generateNextDayPrediction([...predictedData], timePortion);
+    const min = getMin(predictedData);
+    const max = getMax(predictedData);
+    const scaledNextDay = minMaxScaler(nextDayPrediction, min, max);
+    const tensor = tf.tensor1d(scaledNextDay.data).reshape([1, timePortion, 1]);
+    model.predict(tensor).data().then(pred => {
+      let inv = minMaxInverseScaler(pred, min, max);
+      inv.data = Array.prototype.slice.call(inv.data);
+      setPredictedData(prev => [...prev, ...inv.data]);
+      setWait(false);
     });
-  }
+  };
 
-  getSeries = () => {
-    const { data } = this.props;
-    const { predictedData, predictedDates, timePortion, type } = this.state;
+  const buildChartData = () => {
+    const current = data.map(row => ({ ts: dayjs(row.Date).valueOf(), val: row[type] }));
+    if (!current.length) return { rows: [], splitDate: null };
 
-    let series = [];
-    // @ts-ignore
-    let current = data.map((row) => [dayjs(row.Date).valueOf(), row[type]]);
-    let predicted = null;
-    let dates = [];
-
-    if (predictedData.length && predictedDates.length) {
-      predicted = predictedData.map((value, index) => {
-        const dayjsDate = predictedDates.length > (index + timePortion) ? dayjs(predictedDates[index + timePortion]) : dates[dates.length-1].add(1, 'day');
-        dates.push(dayjsDate);  
-        return [dayjsDate.valueOf(), value];
-      });
-    }
-
-    series.push({ type: 'area', name: type, data: current });
-    predicted && series.push({ type: 'line', name: `Predicted ${type}`, data: predicted, color: '#FF00FF' });
-
-    return series;
-  }
-
-  buildPredictionData = () => {
-    const series = this.getSeries();
-    if (!series[0]?.data?.length) return [];
-    const { type } = this.state;
-    const actualSeries = series[0].data;
-    const predictedSeries = series[1]?.data;
     const map = new Map();
-    actualSeries.forEach(([ts, val]) => {
-      map.set(ts, { date: dayjs(ts).format('MM/DD/YY'), [type]: val });
-    });
-    if (predictedSeries) {
-      predictedSeries.forEach(([ts, val]) => {
-        const row = map.get(ts) || { date: dayjs(ts).format('MM/DD/YY') };
-        row.Predicted = val;
-        map.set(ts, row);
+    current.forEach(({ ts, val }) => map.set(ts, { date: dayjs(ts).format('MM/DD/YY'), Actual: val }));
+
+    let splitDate = null;
+    if (predictedData.length && predictedDates.length) {
+      let dates = [];
+      predictedData.forEach((value, index) => {
+        const dayjsDate = predictedDates.length > (index + timePortion)
+          ? dayjs(predictedDates[index + timePortion])
+          : dates[dates.length - 1].add(1, 'day');
+        dates.push(dayjsDate);
+        const ts = dayjsDate.valueOf();
+        const existing = map.get(ts) || { date: dayjsDate.format('MM/DD/YY') };
+        existing.Predicted = Math.round(value);
+        map.set(ts, existing);
       });
+
+      // Find where Predicted appears without Actual (first future point)
+      const all = Array.from(map.values());
+      const firstFuture = all.find(r => r.Predicted !== undefined && r.Actual === undefined);
+      if (firstFuture) {
+        splitDate = firstFuture.date;
+        // Bridge: last Actual point also gets Predicted so lines connect
+        const bridgeIdx = all.indexOf(firstFuture) - 1;
+        if (bridgeIdx >= 0) all[bridgeIdx].Predicted = all[bridgeIdx].Actual;
+      }
     }
-    return Array.from(map.values());
-  }
 
-  renderChart() {
-    const data = this.buildPredictionData();
-    const { type } = this.state;
-    const hasPredicted = data.some(d => d.Predicted !== undefined);
+    return { rows: Array.from(map.values()), splitDate };
+  };
 
-    return (
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+  if (error) return <div className="covid-predictions__error">Error: {error}</div>;
+
+  const { rows: chartData, splitDate } = buildChartData();
+  const hasPredicted = chartData.some(d => d.Predicted !== undefined);
+
+  return (
+    <div className="cpred">
+      {/* Metric selector */}
+      <div className="cpred__controls">
+        <div className="cpred__control-group">
+          <span className="cpred__label">{t('predictions.metric')}</span>
+          <div className="cpred__pills">
+            {Y_VALUES.map(v => (
+              <button
+                key={v}
+                className={`cpred__pill${type === v ? ' cpred__pill--active' : ''}`}
+                onClick={() => setType(v)}
+                disabled={isLoading}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="cpred__control-group cpred__control-group--actions">
+          <button
+            className="cpred__btn cpred__btn--primary"
+            disabled={isLoading || predictedData.length > 0}
+            onClick={loadData}
+          >
+            {isLoading ? t('predictions.training', { n: progress }) : t('predictions.trainBtn')}
+          </button>
+          {!!predictedData.length && !isLoading && (
+            <button
+              className="cpred__btn cpred__btn--secondary"
+              disabled={wait || !model}
+              onClick={predictMore}
+            >
+              {wait ? t('predictions.training', { n: '…' }) : t('predictions.extendBtn')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {isLoading && (
+        <div className="cpred__progress-wrap">
+          <div className="cpred__progress-bar" style={{ width: `${progress}%` }} />
+          <span className="cpred__progress-label">{message}</span>
+        </div>
+      )}
+
+      {/* Chart */}
+      <ResponsiveContainer width="100%" height={320}>
+        <ComposedChart data={chartData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="cpActualGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor="#457B9D" stopOpacity={0.35} />
+              <stop offset="95%" stopColor="#457B9D" stopOpacity={0}    />
+            </linearGradient>
+          </defs>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
           <YAxis tick={{ fontSize: 11 }} />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey={type} stroke="#457B9D" dot={false} isAnimationActive={false} />
-          {hasPredicted && (
-            <Line type="monotone" dataKey="Predicted" stroke="#FF00FF" strokeDasharray="5 5" dot={false} isAnimationActive={false} />
+          {splitDate && (
+            <ReferenceLine x={splitDate} stroke="#aaa" strokeDasharray="4 4"
+              label={{ value: 'Forecast →', fontSize: 11, fill: '#888', position: 'insideTopRight' }} />
           )}
-        </LineChart>
+          <Area
+            type="monotone"
+            dataKey="Actual"
+            stroke="#457B9D"
+            fill="url(#cpActualGrad)"
+            dot={false}
+            isAnimationActive={false}
+            connectNulls={false}
+          />
+          {hasPredicted && (
+            <Line
+              type="monotone"
+              dataKey="Predicted"
+              stroke="#E63946"
+              strokeDasharray="6 3"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+              connectNulls={false}
+            />
+          )}
+        </ComposedChart>
       </ResponsiveContainer>
-    );
-  }
-
-  renderOptions = () => {
-    const { yValues, type } = this.state;
-   
-    return (
-      <div className="covid-predictions__options">
-        <div className="covid-predictions__values">Values (Y Axis)</div>
-        {yValues.map((yValue, index) => {
-          return (
-              <label className="covid-predictions__value" key={index}>
-                <input type="radio" value={yValue} checked={type === yValue}
-                  onChange={event => event && this.setState({ type: event.target.value })} />
-                {yValue}
-              </label>);
-        })}
-      </div>
-    )
-  }
-
-  renderChartState() {
-    const { isLoading, message, wait, predictedData } = this.state;
-
-    return (
-      <div className="covid-predictions__wrapper">
-        {<button disabled={isLoading || predictedData.length > 0} onClick={event => event && this.loadData()}>Generate Model!</button>}
-        {isLoading && (<Loading size="xl" message={message} showProgress={true} />)}
-        {!isLoading && this.renderChart()}
-        {!!predictedData.length && !isLoading && <button disabled={wait} onClick={event => event && this.predictMore()}>Predict next day!</button>}
-      </div>
-    )
-  }
-
-  render() {
-    const { error } = this.state;
-
-    if (error) return (<div>Couldn't load chart: {error}</div>);
-
-    return (
-      <div className="covid-predictions">
-        {this.renderOptions()}
-        {this.renderChartState()}
-      </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 export default CovidPredictions;
+

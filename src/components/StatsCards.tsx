@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import CountryDataRow from '../types/CountryDataRow';
 import './StatsCards.scss';
 
@@ -9,6 +10,7 @@ interface StatsCardsProps {
 const fmt = (n: number) => n.toLocaleString();
 
 const StatsCards: React.FC<StatsCardsProps> = ({ data }) => {
+  const { t } = useTranslation();
   if (!data.length) return null;
 
   const latest = data[data.length - 1];
@@ -18,10 +20,10 @@ const StatsCards: React.FC<StatsCardsProps> = ({ data }) => {
   const newDeaths = Math.max(0, latest.Deaths    - prev.Deaths);
 
   const cards = [
-    { label: 'Total Confirmed', value: fmt(latest.Confirmed), color: 'blue',   sub: `+${fmt(newCases)} latest`   },
-    { label: 'Total Deaths',    value: fmt(latest.Deaths),    color: 'red',    sub: `+${fmt(newDeaths)} latest`   },
-    { label: 'Recovered',       value: fmt(latest.Recovered), color: 'green',  sub: null                          },
-    { label: 'Active',          value: fmt(latest.Active),    color: 'orange', sub: null                          },
+    { label: t('stats.confirmed'), value: fmt(latest.Confirmed), color: 'blue',   sub: t('stats.latest', { n: fmt(newCases) })   },
+    { label: t('stats.deaths'),    value: fmt(latest.Deaths),    color: 'red',    sub: t('stats.latest', { n: fmt(newDeaths) })   },
+    { label: t('stats.recovered'), value: fmt(latest.Recovered), color: 'green',  sub: null                                        },
+    { label: t('stats.active'),    value: fmt(latest.Active),    color: 'orange', sub: null                                        },
   ];
 
   return (

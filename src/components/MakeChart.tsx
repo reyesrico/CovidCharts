@@ -1,8 +1,9 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { isEqual } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import CountryDataRow from '../types/CountryDataRow';
 import MakeChartProps from '../types/MakeChartProps';
@@ -26,6 +27,28 @@ const SERIES_DASHES: Record<string, string | undefined> = {
   RecoveredInc: '5 5',
   ActiveInc:    '5 5',
 };
+
+const SERIES_FILL_OPACITY: Record<string, number> = {
+  Confirmed:    0.15,
+  Deaths:       0.15,
+  Recovered:    0.15,
+  Active:       0.15,
+  ConfirmedInc: 0,
+  DeathsInc:    0,
+  RecoveredInc: 0,
+  ActiveInc:    0,
+};
+
+type LocalRange = '7' | '30' | '90' | '180' | '365' | 'all';
+
+const LOCAL_RANGES: { label: string; value: LocalRange }[] = [
+  { label: '1W', value: '7' },
+  { label: '1M', value: '30' },
+  { label: '3M', value: '90' },
+  { label: '6M', value: '180' },
+  { label: '1Y', value: '365' },
+  { label: 'ALL', value: 'all' },
+];
 
 type YValues = {
   Confirmed: boolean;
@@ -54,69 +77,87 @@ const buildChartData = (data: CountryDataRow[]) =>
     };
   });
 
-class MakeChart extends Component<MakeChartProps, { yValues: YValues }> {
-  state = {
-    yValues: {
-      Confirmed:    true,
-      Deaths:       false,
-      Recovered:    false,
-      Active:       false,
-      ConfirmedInc: false,
-      DeathsInc:    false,
-      RecoveredInc: false,
-      ActiveInc:    false,
-    } as YValues
-  }
+const DEFAULT_Y_VALUES: YValues = {
+  Confirmed:    true,
+  Deaths:       false,
+  Recovered:    false,
+  Active:       false,
+  ConfirmedInc: false,
+  DeathsInc:    false,
+  RecoveredInc: false,
+  ActiveInc:    false,
+};
 
-  componentDidUpdate(prevProps: MakeChartProps) {
-    // Reset to Confirmed when data changes
-    if (!isEqual(prevProps.data, this.props.data)) {
-      this.setState({
-        yValues: {
-          Confirmed: true, Deaths: false, Recovered: false, Active: false,
-          ConfirmedInc: false, DeathsInc: false, RecoveredInc: false, ActiveInc: false,
-        }
-      });
+const MakeChart: React.FC<MakeChartProps> = ({ data, countries, map }) => {
+  const { t } = useTranslation();
+  const [yValues, setYValues] = useState<YValues>(DEFAULT_Y_VALUES);
+  const [localRange, setLocalRange] = useState<LocalRange>('all');
+  const prevDataRef = useRef<CountryDataRow[]>([]);
+
+  useEffect(() => {
+    if (!isEqual(prevDataRef.current, data)) {
+      prevDataRef.current = data;
+      setYValues(DEFAULT_Y_VALUES);
+      setLocalRange('all');
     }
-  }
+  }, [data]);
 
-  changeInput = (key: keyof YValues) => {
-    const yValues = { ...this.state.yValues, [key]: !this.state.yValues[key] };
-    // prevent all-unchecked: revert to Confirmed
-    if (!Object.values(yValues).some(Boolean)) yValues.Confirmed = true;
-    this.setState({ yValues });
-  }
+  const changeInput = (key: keyof YValues) => {
+    const next = { ...yValues, [key]: !yValues[key] };
+    if (!Object.values(next).some(Boolean)) next.Confirmed = true;
+    setYValues(next);
+  };
 
-  renderOptions() {
-    const { yValues } = this.state;
-    return (
+  if (!data || !data.length) return <div className="make-chart__empty">{t('chart.noData')}</div>;
+
+  const filteredData = (() => {
+    if (localRange === 'all') return data;
+    const lastDate = new Date(data[data.length - 1].Date);
+    const cutoff = new Date(lastDate);
+    cutoff.setDate(cutoff.getDate() - parseInt(localRange, 10));
+    const filtered = data.filter(row => new Date(row.Date) >= cutoff);
+    return filtered.length > 0 ? filtered : data;
+  })();
+
+  const chartData = buildChartData(filteredData);
+
+  return (
+    <div className="make-chart">
       <div className="make-chart__options">
-        <div className="make-chart__label">Values (Y Axis)</div>
+        <div className="make-chart__label">{t('makechart.values')}</div>
         {(Object.keys(yValues) as (keyof YValues)[]).map(key => (
           <label key={key} className="make-chart__checkbox">
             <input
               type="checkbox"
               checked={yValues[key]}
-              onChange={() => this.changeInput(key)}
+              onChange={() => changeInput(key)}
             />
             {key}
           </label>
         ))}
       </div>
-    );
-  }
-
-  render() {
-    const { data } = this.props;
-    const { yValues } = this.state;
-    const chartData = buildChartData(data);
-
-    return (
-      <div className="make-chart">
-        {this.renderOptions()}
-        <hr />
+      <div className="make-chart__chart-area">
+        <div className="make-chart__range-selector">
+          {LOCAL_RANGES.map(({ label, value }) => (
+            <button
+              key={value}
+              className={`make-chart__range-btn${localRange === value ? ' make-chart__range-btn--active' : ''}`}
+              onClick={() => setLocalRange(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={chartData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 10, right: 24, left: 0, bottom: 0 }}>
+            <defs>
+              {(Object.keys(yValues) as (keyof YValues)[]).filter(k => yValues[k]).map(key => (
+                <linearGradient key={key} id={`fill-${key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={SERIES_COLORS[key]} stopOpacity={0.35} />
+                  <stop offset="95%" stopColor={SERIES_COLORS[key]} stopOpacity={0}    />
+                </linearGradient>
+              ))}
+            </defs>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="Date" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
             <YAxis tick={{ fontSize: 11 }} />
@@ -124,22 +165,35 @@ class MakeChart extends Component<MakeChartProps, { yValues: YValues }> {
             <Legend />
             {(Object.keys(yValues) as (keyof YValues)[]).map(key =>
               yValues[key] ? (
-                <Line
-                  key={key}
-                  type="monotone"
-                  dataKey={key}
-                  stroke={SERIES_COLORS[key]}
-                  strokeDasharray={SERIES_DASHES[key]}
-                  dot={false}
-                  isAnimationActive={false}
-                />
+                SERIES_FILL_OPACITY[key] > 0 ? (
+                  <Area
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={SERIES_COLORS[key]}
+                    strokeDasharray={SERIES_DASHES[key]}
+                    fill={`url(#fill-${key})`}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                ) : (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={SERIES_COLORS[key]}
+                    strokeDasharray={SERIES_DASHES[key]}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                )
               ) : null
             )}
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 export default MakeChart;

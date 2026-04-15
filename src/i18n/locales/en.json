@@ -1,0 +1,73 @@
+{
+  "header": {
+    "title": "CovidCharts",
+    "disclaimer": "Data: Johns Hopkins CSSE via covid-api.com — through Mar 2023",
+    "loadingCountries": "Loading Countries...",
+    "loadingData": "Loading {{country}} data…"
+  },
+  "banner": {
+    "hint": "Select a country to view charts"
+  },
+  "instructions": {
+    "title": "Quick Start",
+    "step1": "Select a country from the dropdown above",
+    "step2": "If the country has states/provinces, select one",
+    "step3": "If the country has cities, select a city",
+    "flattenLabel": "Flatten-curve examples:",
+    "flattenExamples": "Germany, South Korea, United States (NY, NY)",
+    "saveBtn": "Save as Default",
+    "savedAlert": "✓ Default saved!",
+    "tip": "Use the time-range buttons (1M / 3M…) to change historical period"
+  },
+  "stats": {
+    "confirmed": "Total Confirmed",
+    "deaths": "Total Deaths",
+    "recovered": "Recovered",
+    "active": "Active",
+    "latest": "+{{n}} latest"
+  },
+  "timeRange": {
+    "1M": "1M",
+    "3M": "3M",
+    "6M": "6M",
+    "1Y": "1Y",
+    "ALL": "ALL"
+  },
+  "chart": {
+    "totalTitle": "Total Confirmed and Deaths",
+    "incrementalTitle": "Incremental Confirmed and Deaths",
+    "compareTitle": "Compare with another country",
+    "makeTitle": "Make Your Own {{title}} Chart",
+    "projectionsTitle": "Projections – Holt-Winters",
+    "predictionsTitle": "Covid Predictions (CNN Model)",
+    "noData": "No data available"
+  },
+  "error": {
+    "loading": "Error loading data for {{country}}.",
+    "retry": "Retry"
+  },
+  "makechart": {
+    "values": "Values (Y Axis)"
+  },
+  "projections": {
+    "metric": "Metric",
+    "weeksAhead": "Weeks to forecast",
+    "noData": "Not enough data to compute forecast (need ≥ {{n}} data points)"
+  },
+  "predictions": {
+    "metric": "Metric",
+    "trainBtn": "Train & Predict",
+    "extendBtn": "+ Extend Forecast",
+    "training": "Training… {{n}}%"
+  },
+  "footer": {
+    "codedBy": "Covid Charts™ is a platform coded by",
+    "why": "Why?: Click",
+    "here": "here",
+    "code": "Code:",
+    "contact": "Contact & Follow on Twitter:"
+  },
+  "lang": {
+    "label": "Language"
+  }
+}

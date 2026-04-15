@@ -1,5 +1,8 @@
 import CountryDataRow from '../types/CountryDataRow';
 
+// Johns Hopkins CSSE data ends on this date
+const DATA_END_DATE = '2023-03-09';
+
 // New COVID API endpoints (covid-api.com)
 const api = {
   regions: () => `https://covid-api.com/api/regions`,
@@ -81,19 +84,30 @@ export const getCountry = async (countryIso: string, dateFrom?: string, dateTo?:
 };
 
 export const getCountryByDateRange = async (countryIso: string, dateFrom: string, dateTo: string) => {
-  const allReports: CountryDataRow[] = [];
+  // Cap the end date — data only exists through DATA_END_DATE
+  const effectiveTo = dateTo > DATA_END_DATE ? DATA_END_DATE : dateTo;
+
   const startDate = new Date(dateFrom);
-  const endDate = new Date(dateTo);
-  
-  // Build array of dates to fetch
+  const endDate   = new Date(effectiveTo);
+  const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000);
+
+  // Choose step so total requests stay ≤ ~50
+  let stepDays = 1;
+  if      (totalDays > 600) stepDays = 20;
+  else if (totalDays > 300) stepDays = 10;
+  else if (totalDays > 120) stepDays = 7;
+  else if (totalDays > 50)  stepDays = 4;
+  else if (totalDays > 20)  stepDays = 2;
+
   const datesToFetch: string[] = [];
-  const currentDate = new Date(startDate);
-  while (currentDate <= endDate) {
-    datesToFetch.push(currentDate.toISOString().split('T')[0]);
-    currentDate.setDate(currentDate.getDate() + 1);
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    datesToFetch.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + stepDays);
   }
-  
-  // Fetch all dates in parallel for better performance
+  // Always include the last available date for accurate end-point
+  if (!datesToFetch.includes(effectiveTo)) datesToFetch.push(effectiveTo);
+
   const promises = datesToFetch.map(dateStr => {
     const params = `?iso=${countryIso.toUpperCase()}&date=${dateStr}`;
     return fetchData(api.reports(params))
@@ -101,14 +115,16 @@ export const getCountryByDateRange = async (countryIso: string, dateFrom: string
         const reports = response.data || [];
         return reports.map(mapReportToCountryDataRow);
       })
-      .catch(error => {
-        console.error(`Error fetching data for ${dateStr}:`, error);
-        return [];
-      });
+      .catch(() => [] as CountryDataRow[]);
   });
-  
+
   const results = await Promise.all(promises);
+  const allReports: CountryDataRow[] = [];
   results.forEach(reports => allReports.push(...reports));
-  
+
+  // Sort chronologically and remove any empty/duplicate dates
+  allReports.sort((a, b) => a.Date.localeCompare(b.Date));
+
   return { data: allReports };
 };
+

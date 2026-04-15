@@ -5,9 +5,9 @@ export const getDateWeekAgo = (date: Date): Date => {
   return newDate;
 };
 
-// Helper function to get date N days ago from today
-export const getDaysAgoDate = (days: number): Date => {
-  const date = new Date();
+// Helper function to get date N days ago from a reference date (defaults to today)
+export const getDaysAgoDate = (days: number, from: Date = new Date()): Date => {
+  const date = new Date(from);
   date.setDate(date.getDate() - days);
   return date;
 };

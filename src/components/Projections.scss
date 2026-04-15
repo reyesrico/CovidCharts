@@ -1,40 +1,85 @@
-.column-center {
+/* ── Holt-Winters Projections ─────────────────────────── */
+.hw {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 16px;
+}
+
+.hw__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #f4f6f8;
+  border-radius: 8px;
+}
+
+.hw__control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hw__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6C757D;
+  white-space: nowrap;
+}
+
+.hw__pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.hw__pill {
+  padding: 4px 12px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: #457B9D;
+    color: #457B9D;
+  }
+
+  &--active {
+    background: #457B9D;
+    border-color: #457B9D;
+    color: #fff;
+
+    &:hover {
+      background: #35617e;
+    }
+  }
+}
+
+.hw__empty {
+  padding: 16px;
+  color: #6C757D;
+  font-style: italic;
+}
+
+/* keep old .projections__* classes for Projections.tsx (SMA/ML component) */
+.projections__loading {
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
-.projections__loading {
-  @extend .column-center;
-}
-
 .projections__model-trained {
-  @extend .column-center;
   font-weight: bold;
   margin-top: 8px;
 }
 
-.projections__choose {
-  background-color: lightgray;
-  display: flex;
-  flex-direction: row;
+.projections__train-btn {
+  margin-bottom: 8px;
 }
 
-.projections__select {
-  margin-left: 12px;
-  width: 80px;
-}
-
-@media screen and (max-width: 500px) {
-  .projections {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .projections__train-btn {
-    margin-bottom: 12px;
-  }
-}

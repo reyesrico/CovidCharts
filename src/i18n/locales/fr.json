@@ -1,0 +1,73 @@
+{
+  "header": {
+    "title": "CovidCharts",
+    "disclaimer": "Données : Johns Hopkins CSSE via covid-api.com — jusqu'en mars 2023",
+    "loadingCountries": "Chargement des pays...",
+    "loadingData": "Chargement des données de {{country}}…"
+  },
+  "banner": {
+    "hint": "Sélectionnez un pays pour afficher les graphiques"
+  },
+  "instructions": {
+    "title": "Démarrage rapide",
+    "step1": "Sélectionnez un pays dans le menu déroulant",
+    "step2": "Si le pays a des états/provinces, sélectionnez-en un",
+    "step3": "Si le pays a des villes, sélectionnez-en une",
+    "flattenLabel": "Exemples d'aplatissement de courbe :",
+    "flattenExamples": "Allemagne, Corée du Sud, États-Unis (NY, NY)",
+    "saveBtn": "Enregistrer par défaut",
+    "savedAlert": "✓ Par défaut enregistré !",
+    "tip": "Utilisez les boutons de plage de temps (1M / 3M…) pour changer la période"
+  },
+  "stats": {
+    "confirmed": "Total Confirmés",
+    "deaths": "Total Décès",
+    "recovered": "Guéris",
+    "active": "Actifs",
+    "latest": "+{{n}} derniers"
+  },
+  "timeRange": {
+    "1M": "1M",
+    "3M": "3M",
+    "6M": "6M",
+    "1Y": "1A",
+    "ALL": "TOUT"
+  },
+  "chart": {
+    "totalTitle": "Total Confirmés et Décès",
+    "incrementalTitle": "Confirmés et Décès Incrémentaux",
+    "compareTitle": "Comparer avec un autre pays",
+    "makeTitle": "Créez votre propre graphique {{title}}",
+    "projectionsTitle": "Projections – Holt-Winters",
+    "predictionsTitle": "Prédictions Covid (Modèle CNN)",
+    "noData": "Aucune donnée disponible"
+  },
+  "error": {
+    "loading": "Erreur lors du chargement des données pour {{country}}.",
+    "retry": "Réessayer"
+  },
+  "makechart": {
+    "values": "Valeurs (Axe Y)"
+  },
+  "projections": {
+    "metric": "Métrique",
+    "weeksAhead": "Semaines à prévoir",
+    "noData": "Données insuffisantes pour calculer la prévision (≥ {{n}} points requis)"
+  },
+  "predictions": {
+    "metric": "Métrique",
+    "trainBtn": "Entraîner & Prédire",
+    "extendBtn": "+ Étendre la prévision",
+    "training": "Entraînement… {{n}}%"
+  },
+  "footer": {
+    "codedBy": "Covid Charts™ est une plateforme créée par",
+    "why": "Pourquoi ? Cliquez",
+    "here": "ici",
+    "code": "Code :",
+    "contact": "Suivez-moi sur Twitter :"
+  },
+  "lang": {
+    "label": "Langue"
+  }
+}

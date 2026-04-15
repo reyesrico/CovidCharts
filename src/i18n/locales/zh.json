@@ -1,0 +1,73 @@
+{
+  "header": {
+    "title": "新冠图表",
+    "disclaimer": "数据来源：约翰斯·霍普金斯大学 via covid-api.com — 截至 2023 年 3 月",
+    "loadingCountries": "正在加载国家...",
+    "loadingData": "正在加载{{country}}的数据…"
+  },
+  "banner": {
+    "hint": "请选择一个国家以查看图表"
+  },
+  "instructions": {
+    "title": "快速开始",
+    "step1": "从上方下拉菜单中选择一个国家",
+    "step2": "如果该国家有省份/州，请选择一个",
+    "step3": "如果该国家有城市，请选择一个",
+    "flattenLabel": "曲线压平示例：",
+    "flattenExamples": "德国、韩国、美国（纽约州，纽约市）",
+    "saveBtn": "设为默认",
+    "savedAlert": "✓ 已保存为默认！",
+    "tip": "使用时间范围按钮（1M / 3M…）更改历史查看周期"
+  },
+  "stats": {
+    "confirmed": "累计确诊",
+    "deaths": "累计死亡",
+    "recovered": "已康复",
+    "active": "现存确诊",
+    "latest": "+{{n}} 最新"
+  },
+  "timeRange": {
+    "1M": "1月",
+    "3M": "3月",
+    "6M": "6月",
+    "1Y": "1年",
+    "ALL": "全部"
+  },
+  "chart": {
+    "totalTitle": "累计确诊与死亡",
+    "incrementalTitle": "每日新增确诊与死亡",
+    "compareTitle": "与其他国家对比",
+    "makeTitle": "自定义{{title}}图表",
+    "projectionsTitle": "预测 – Holt-Winters",
+    "predictionsTitle": "新冠预测（CNN 模型）",
+    "noData": "暂无数据"
+  },
+  "error": {
+    "loading": "加载{{country}}数据时出错。",
+    "retry": "重试"
+  },
+  "makechart": {
+    "values": "指标（Y 轴）"
+  },
+  "projections": {
+    "metric": "指标",
+    "weeksAhead": "预测周数",
+    "noData": "数据不足，无法计算预测（需要 ≥ {{n}} 个数据点）"
+  },
+  "predictions": {
+    "metric": "指标",
+    "trainBtn": "训练与预测",
+    "extendBtn": "+ 延长预测",
+    "training": "训练中… {{n}}%"
+  },
+  "footer": {
+    "codedBy": "Covid Charts™ 由以下人员开发：",
+    "why": "为什么？点击",
+    "here": "这里",
+    "code": "代码：",
+    "contact": "关注我的 Twitter："
+  },
+  "lang": {
+    "label": "语言"
+  }
+}

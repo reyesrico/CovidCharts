@@ -1,14 +1,62 @@
 .make-chart {
   display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .make-chart__options {
-  margin-right: 12px;
   padding: 12px;
   background-color: lightgray;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.make-chart__label {
+  font-weight: bold;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.make-chart__chart-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.make-chart__range-selector {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.make-chart__range-btn {
+  padding: 4px 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: #457B9D;
+    color: #333;
+  }
+
+  &--active {
+    background: #457B9D;
+    border-color: #457B9D;
+    color: #fff;
+
+    &:hover {
+      background: #35617e;
+      border-color: #35617e;
+    }
+  }
 }
 
 .make-chart__values {
@@ -18,11 +66,13 @@
   margin-bottom: 4px;
 }
 
-@media screen and (max-width: 500px) {
-  .make-chart {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.make-chart__empty {
+  padding: 16px;
+  color: #6C757D;
+}
+
+@media screen and (max-width: 600px) {
+  .make-chart__options {
+    width: 100%;
   }
 }
