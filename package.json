@@ -60,5 +60,8 @@
   },
   "overrides": {
     "@babel/core": "^7.29.6"
+  },
+  "engines": {
+    "node": ">=1"
   }
 }
