@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as tf from '@tensorflow/tfjs';
+import * as tf from '../helpers/tensorflow.js';
 import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine,
@@ -281,4 +281,3 @@ const CovidPredictions = ({ data }) => {
 };
 
 export default CovidPredictions;
-
