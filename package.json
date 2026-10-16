@@ -4,7 +4,10 @@
   "private": true,
   "homepage": "http://reyesrico.github.io/CovidCharts",
   "dependencies": {
-    "@tensorflow/tfjs": "^2.0.0",
+    "@tensorflow/tfjs-backend-cpu": "2.8.6",
+    "@tensorflow/tfjs-backend-webgl": "2.8.6",
+    "@tensorflow/tfjs-core": "2.8.6",
+    "@tensorflow/tfjs-layers": "2.8.6",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
@@ -31,6 +34,7 @@
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
     "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
@@ -62,6 +66,6 @@
     "@babel/core": "^7.29.6"
   },
   "engines": {
-    "node": ">=1"
+    "node": "^22.13.0 || >=24.0.0"
   }
 }

@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs';
+import * as tf from './tensorflow.js';
 
 // https://github.com/jinglescode/demos/tree/master/src/app/components/tfjs-timeseries-stocks
     /* REAL VALUES

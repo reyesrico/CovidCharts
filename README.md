@@ -30,10 +30,10 @@ A data-visualization platform for exploring COVID-19 trends by country, state/pr
 
 | Layer | Technology |
 |---|---|
-| UI | React 16 + TypeScript, Vite 5 |
+| UI | React 16 + TypeScript, Vite 8 |
 | Charts | Recharts v2 — `ComposedChart`, `Area`, `Line`, `ReferenceLine` |
 | Styling | SCSS modules, CSS custom properties |
-| ML | TensorFlow.js 2 (1D-CNN, in-browser) |
+| ML | TensorFlow.js 2 core/layers with CPU and WebGL backends (1D-CNN, in-browser) |
 | Forecasting | Custom Holt-Winters triple exponential smoothing (ES module safe) |
 | i18n | i18next + react-i18next |
 | Utilities | dayjs, lodash, react-select |
@@ -43,12 +43,23 @@ A data-visualization platform for exploring COVID-19 trends by country, state/pr
 
 ## Getting Started
 
+Use Node.js 22.13+ on the 22.x line, or Node.js 24+ (`nvm use` selects Node 22).
+
 ```bash
-npm install
+nvm use
+npm ci
 npm start          # dev server → http://localhost:5173
+npm test           # dependency and TensorFlow regression tests
+npm run typecheck
+npm run lint
 npm run build      # production build → dist/
 npm run deploy     # build + push to gh-pages branch
 ```
+
+TensorFlow runtime modules are pinned to the same version. The umbrella
+`@tensorflow/tfjs` package is intentionally excluded: its CLI dependencies pull in
+`argparse` 1 and `sprintf-js`, which has no patched release for CVE-2026-97058.
+Both prediction components use the shared runtime in `src/helpers/tensorflow.js`.
 
 ---
 
@@ -65,4 +76,3 @@ Try these locations to see well-documented curve patterns:
 ## Author
 
 [Carlos Reyes-Rico](http://stuffie.azurewebsites.net/PM_Carlos-Reyes2.html) · [@reyesrico](https://twitter.com/reyesrico)
-
