@@ -16,7 +16,7 @@
     "@types/react-dom": "^18.0.0",
     "@types/react-select": "^3.0.13",
     "dayjs": "^1.11.10",
-    "i18next": "^26.0.4",
+    "i18next": "^26.7.2",
     "lodash": "^4.17.15",
     "nostradamus": "^0.1.0",
     "path-to-regexp": "^0.1.13",
